@@ -55,7 +55,7 @@ def db_close(db):
 def get_tushare_data(symbol):
 
     # df=ts.get_hist_data(symbol,start='2016-01-01',end='2018-04-30')#tushare拿数据
-    df = ts.get_k_data(symbol, start='2018-01-01', end='2018-04-30')
+    df = ts.get_k_data(symbol, start='2013-01-01', end='2018-04-30')
     # df = df.set_index("date")
     close = [float(x) for x in df['close']]
     try:
@@ -66,7 +66,7 @@ def get_tushare_data(symbol):
         df.index = pd.to_datetime(df.index, format='%Y-%m-%d')
         df = lm_kdj(df, 9, 'close')  ##计算好kdj之后从13行开始取数据,计算出来的kdj比较准确
         df = df[34:]
-        df.to_csv(path_or_buf='F:\Code\\buysell\Data\pic_data\datacsv\\'+symbol+'.csv',sep=',',index=True)
+        df.to_csv(path_or_buf='F:\Code\\buysell\data\pic_data\datacsv\\'+symbol+'.csv',sep=',',index=True)
     except:
         # print(symbol)
         # print(df)
@@ -150,7 +150,7 @@ def create_kdj_pic(symbol,df,sequence):
         plt.plot(sig_j.index,sig_j, label='j')
         plt.axis('off')
         # plt.show()
-        fig.savefig('F:\Code\\buysell\Data\pic_data\kdj_pic\\'+symbol+'\\'+str(sequence))
+        fig.savefig('F:\Code\\buysell\data\pic_data\kdj_pic\\'+symbol+'\\'+str(sequence))
         plt.close()
         return 1
     except:
@@ -166,7 +166,7 @@ def create_macd_pic(symbol,df,sequence):
         plt.plot(df.index, df['MACD'], label='macd dif')#快线
         plt.plot(df.index, df['MACDsignal'], label='signal dea')# 慢线
         plt.bar(df.index, df['MACDhist']*2, label='hist bar')
-        fig.savefig('F:\Code\\buysell\Data\pic_data\macd_pic\\' + symbol + '\\' + str(sequence))
+        fig.savefig('F:\Code\\buysell\data\pic_data\macd_pic\\' + symbol + '\\' + str(sequence))
         plt.close()
         return 1
     except:
@@ -175,7 +175,7 @@ def create_macd_pic(symbol,df,sequence):
 
 def create_pics_and_datas(symbol,pic_type=None):
     data_dict_list = []
-    df = pd.read_csv('F:\Code\\buysell\Data\pic_data\datacsv\\' + symbol + '.csv', sep=',')
+    df = pd.read_csv('F:\Code\\buysell\data\pic_data\datacsv\\' + symbol + '.csv', sep=',')
     ##计算kdj
     # df=lm_kdj(df,9,'close')  ##计算好kdj之后从13行开始取数据
     # df=df[13:]
@@ -198,8 +198,8 @@ def create_pics_and_datas(symbol,pic_type=None):
 
 def store_csv(symbol,data_dict_list,pic_type=None):
     df = pd.DataFrame(data_dict_list)
-    print(df)
-    df.to_csv(path_or_buf='F:\Code\\buysell\Data\pic_data\datacsv\\'+symbol+'_final.csv',sep=',',index=True)
+    # print(df)
+    df.to_csv(path_or_buf='F:\Code\\buysell\data\pic_data\datacsv\\'+symbol+'_final.csv',sep=',',index=True)
 
 
 def store_database(symbol,data_dict_list,db_resp,pic_type=None):
@@ -250,9 +250,11 @@ def store_database(symbol,data_dict_list,db_resp,pic_type=None):
 
 
 ##画图并保存图片到本地。从本地读图片数据并保存到远程数据库
-# stocks_list=['601328','600999', '601628', '600016', '601985', '600019', '600028', '601668', '601878', '601688', '601669', '601390', '601211', '601006', '601989', '601988', '600104', '600518', '601398', '600958', '600309', '601857','600030', '601318', '600837', '600036', '600050', '600547', '601766', '601166', '601601', '601229', '600919', '601169', '600029', '601800', '600000', '600887', '600340', '601881', '601088','603993', '600519', '601336', '601186', '600606', '601818', '600048', '600111', '601288' ]
-stocks_list=['600000']
+stocks_list=['601328','600999', '601628', '600016', '601985', '600019', '600028', '601668', '601878', '601688', '601669', '601390', '601211', '601006', '601989', '601988', '600104', '600518', '601398', '600958', '600309', '601857','600030', '601318', '600837', '600036', '600050', '600547', '601766', '601166', '601601', '601229', '600919', '601169', '600029', '601800', '600000', '600887', '600340', '601881', '601088','603993', '600519', '601336', '601186', '600606', '601818', '600048', '600111', '601288' ]
+# stocks_list=['600000']
 # get_tushare_data(stocks_list[0])
+# for stock in stocks_list:
+#     get_tushare_data(stock)
 dat = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
 logger.info('start_time:%s'%dat)
 db_resp = connect_db()
