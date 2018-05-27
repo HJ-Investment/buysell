@@ -8,6 +8,7 @@ import cv2
 import json
 import time,logging
 import sys
+import os
 
 
 logger = logging.getLogger('prepare_tf_data')
@@ -55,7 +56,7 @@ def db_close(db):
 def get_tushare_data(symbol):
 
     # df=ts.get_hist_data(symbol,start='2016-01-01',end='2018-04-30')#tushare拿数据
-    df = ts.get_k_data(symbol, start='2013-01-01', end='2018-04-30')
+    df = ts.get_k_data(symbol, start='2008-05-01', end='2018-04-30')
     # df = df.set_index("date")
     close = [float(x) for x in df['close']]
     try:
@@ -138,6 +139,8 @@ def create_kdj_pic(symbol,df,sequence):
     # df = df.set_index("date")
     # df = df.sort_index()
     # df.index = pd.to_datetime(df.index, format='%Y-%m-%d') ##设置时间为index之后再画图，不设置话kdj效果更好
+    if not os.path.exists('F:\Code\\buysell\data\pic_data\kdj_pic\\' + symbol):
+        os.makedirs('F:\Code\\buysell\data\pic_data\kdj_pic\\' + symbol)
     fig=plt.gcf()
     # fig = plt.figure(figsize=(12.8,12.8))  ###设置图形的大小  figsize=(12.8,12.8) 保存的时候dpi=10可以得到128*128的图片
     print(df)
@@ -161,11 +164,14 @@ def create_kdj_pic(symbol,df,sequence):
 
 
 def create_macd_pic(symbol,df,sequence):
+    if not os.path.exists('F:\Code\\buysell\data\pic_data\macd_pic\\' + symbol):
+        os.makedirs('F:\Code\\buysell\data\pic_data\macd_pic\\' + symbol)
     fig = plt.gcf()
     try:
         plt.plot(df.index, df['MACD'], label='macd dif')#快线
         plt.plot(df.index, df['MACDsignal'], label='signal dea')# 慢线
         plt.bar(df.index, df['MACDhist']*2, label='hist bar')
+        plt.axis('off')
         fig.savefig('F:\Code\\buysell\data\pic_data\macd_pic\\' + symbol + '\\' + str(sequence))
         plt.close()
         return 1
@@ -257,7 +263,8 @@ stocks_list=['601328','600999', '601628', '600016', '601985', '600019', '600028'
 #     get_tushare_data(stock)
 dat = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
 logger.info('start_time:%s'%dat)
-db_resp = connect_db()
+# db_resp = connect_db()
+i=1
 for stock in stocks_list:
     print(stock)
     start_time=time.time()
@@ -270,9 +277,11 @@ for stock in stocks_list:
     store_end_time=time.time()
     store_latency=str(store_end_time-store_start_time)
     stock_end_time = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-    logger.info('stock:%s;插入数据库耗时%ss,结束时间：%s' % (stock, store_latency,stock_end_time))
+    logger.info('stock:%s;存入CSV耗时%ss,结束时间：%s' % (stock, store_latency,stock_end_time))
+    logger.info('进度:%d' % i)
+    i=i+1
 
-db_close(db_resp['db'])
+# db_close(db_resp['db'])
 end_dat = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
 logger.info('end_time:%s' %str(end_dat))
 
