@@ -67,35 +67,38 @@ def read_and_decode(filename):  # up_or_down_train.tfrecords
                                        })  # 将image数据和label取出来
 
     img_decode = tf.decode_raw(features['img_raw'], tf.uint8)
+    img_decode = np.fromstring(img_decode, np.uint8)  
+    img_decode = cv2.imdecode(img_decode, cv2.IMREAD_COLOR)
+    img_decode = tf.cast(img_decode, tf.float32)
     # img_decode = tf.reshape(img_decode, [128, 128, 2])  # reshape为128*128的3通道图片
     # img_decode = tf.cast(img_decode, tf.float32) * (1. / 255) - 0.5  # 在流中抛出img张量
     label = tf.cast(features['label'], tf.int32)  # 在流中抛出label张量
     return img_decode, label
 
-encode_and_write(stocks_list)
+# encode_and_write(stocks_list)
 
 
-# with tf.Session() as sess:
-#     reshaped_image = read_and_decode('F:\Code\\buysell\data\pic_data\\macd_train_601878.tfrecords')
-#     # 这一步start_queue_runner很重要。
-#     # 我们之前有filename_queue = tf.train.string_input_producer(filenames)
-#     # 这个queue必须通过start_queue_runners才能启动
-#     # 缺少start_queue_runners程序将不能执行
-#     threads = tf.train.start_queue_runners(sess=sess)
-#     # 变量初始化
-#     sess.run(tf.global_variables_initializer())
+with tf.Session() as sess:
+    reshaped_image = read_and_decode('F:\Code\\buysell\data\pic_data\\macd_train_601878.tfrecords')
+    # 这一步start_queue_runner很重要。
+    # 我们之前有filename_queue = tf.train.string_input_producer(filenames)
+    # 这个queue必须通过start_queue_runners才能启动
+    # 缺少start_queue_runners程序将不能执行
+    threads = tf.train.start_queue_runners(sess=sess)
+    # 变量初始化
+    sess.run(tf.global_variables_initializer())
 
-#     if not os.path.exists('F:\Code\\buysell\data\pic_data\\raw_test'):
-#         os.makedirs('F:\Code\\buysell\data\pic_data\\raw_test')
-#     # 保存30张图片
-#     for i in range(30):
-#         # 每次sess.run(reshaped_image)，都会取出一张图片
-#         img_str, label = sess.run(reshaped_image)
-#         # 将图片保存
-#         image = np.fromstring(img_str, np.uint8)  
-#         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-#         ds = pd.DataFrame(image.tolist())
-#         # ds.to_csv('F:\Code\\buysell\data\pic_data\\raw_test\\%d.csv' % i)
-#         # print(image)   
-#         cv2.imwrite('F:\Code\\buysell\data\pic_data\\raw_test\\%d.png' % i, image)
-#         print(label)
+    if not os.path.exists('F:\Code\\buysell\data\pic_data\\raw_test'):
+        os.makedirs('F:\Code\\buysell\data\pic_data\\raw_test')
+    # 保存30张图片
+    for i in range(5):
+        # 每次sess.run(reshaped_image)，都会取出一张图片
+        img, label = sess.run(reshaped_image)
+        print(img.dtype)
+        print(sess.run(tf.shape(img)))
+        # 将图片保存
+        # ds = pd.DataFrame(img.tolist())
+        # ds.to_csv('F:\Code\\buysell\data\pic_data\\raw_test\\%d.csv' % i)
+        # print(img)   
+        # cv2.imwrite('F:\Code\\buysell\data\pic_data\\raw_test\\%d.png' % i, img)
+        print(label)
