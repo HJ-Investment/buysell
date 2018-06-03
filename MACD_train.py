@@ -8,7 +8,7 @@ import make_own_data
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/MACD_train',
+tf.app.flags.DEFINE_string('train_dir', '/tmp/buysell/macd_train',
                            """Directory where to write event logs """
                            """and checkpoint.""")
 tf.app.flags.DEFINE_integer('max_steps', 100000,
@@ -25,7 +25,7 @@ def train():
     global_step = tf.contrib.framework.get_or_create_global_step()
 
     # Get images and labels for MACD.
-    images, labels = MACD.inputs()
+    images, labels = MACD.inputs(False)
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
