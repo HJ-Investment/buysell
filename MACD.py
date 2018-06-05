@@ -11,15 +11,15 @@ FLAGS = tf.app.flags.FLAGS
 # Basic model parameters.
 tf.app.flags.DEFINE_integer('batch_size', 128,
                             """Number of images to process in a batch.""")
-tf.app.flags.DEFINE_string('data_dir', 'F:\\Code\\buysell\\data\\pic_data\\tfrecords\\macd_train.tfrecord',
+tf.app.flags.DEFINE_string('data_dir', 'tfrecords\\macd_train.tfrecord',
                            """Path to the MACD data directory.""")
 tf.app.flags.DEFINE_boolean('use_fp16', False,
                             """Train the model using fp16.""")
 
-# IMAGE_SIZE = make_own_data.IMAGE_SIZE
-# NUM_CLASSES = make_own_data.NUM_CLASSES
-# NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = make_own_data.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
-# NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = make_own_data.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
+IMAGE_SIZE = make_own_data.IMAGE_SIZE
+NUM_CLASSES = make_own_data.NUM_CLASSES
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = make_own_data.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = make_own_data.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
 
 # Constants describing the training process.
@@ -235,6 +235,32 @@ def loss(logits, labels):
   # The total loss is defined as the cross entropy loss plus all of the weight
   # decay terms (L2 loss).
   return tf.add_n(tf.get_collection('losses'), name='total_loss')
+
+def _add_loss_summaries(total_loss):
+  """Add summaries for losses in CIFAR-10 model.
+
+  Generates moving average for all losses and associated summaries for
+  visualizing the performance of the network.
+
+  Args:
+    total_loss: Total loss from loss().
+  Returns:
+    loss_averages_op: op for generating moving averages of losses.
+  """
+  # Compute the moving average of all individual losses and the total loss.
+  loss_averages = tf.train.ExponentialMovingAverage(0.9, name='avg')
+  losses = tf.get_collection('losses')
+  loss_averages_op = loss_averages.apply(losses + [total_loss])
+
+  # Attach a scalar summary to all individual losses and the total loss; do the
+  # same for the averaged version of the losses.
+  for l in losses + [total_loss]:
+    # Name each loss as '(raw)' and name the moving average version of the loss
+    # as the original loss name.
+    tf.summary.scalar(l.op.name + ' (raw)', l)
+    tf.summary.scalar(l.op.name, loss_averages.average(l))
+
+  return loss_averages_op
 
 def train(total_loss, global_step):
   """Train MACD model.

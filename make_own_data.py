@@ -177,7 +177,7 @@ def inputs(eval_data, data_dir, batch_size):
 
 # inputs(False, "tfrecords\\macd_train.tfrecord", 128)
 
-encode_and_write(stocks_list, "macd_pic\\", "tfrecords\\macd_train.tfrecord")
+# encode_and_write(stocks_list, "macd_pic\\", "tfrecords\\macd_train.tfrecord")
 
 # with tf.Session() as sess:
 #     filename_queue = tf.train.string_input_producer(['F:\Code\\buysell\data\pic_data\\tfrecords\\macd_train.tfrecord'])
