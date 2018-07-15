@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.misc
 
+from shutil import copyfile
+
 # image size of 128 x 128. If one alters this number, then the entire model
 # architecture will change and any model would need to be retrained.
 IMAGE_SIZE = 128
@@ -75,7 +77,25 @@ def encode_and_write(stocks_list, dataset_dir, tfrecord_name):
               }))  # example对象对label和image数据进行封装
               writer.write(example.SerializeToString())  # 序列化为字符串
 
-    
+
+def prepare_pic_classification(stocks_list, dataset_dir):
+  for _, symbol in enumerate(stocks_list):
+      df = pd.read_csv(cwd + 'datacsv\\' + str(symbol) + '_final.csv', sep=',')
+      labels = df['day_five']
+      labels_list = labels.tolist()
+      class_path = cwd + dataset_dir + str(symbol) + '\\'
+      file_list = os.listdir(class_path)
+      file_list_sorted = sorted(file_list,key= lambda x:int(x[:-4]))
+      for i, img_name in enumerate(file_list_sorted):
+        img_path = class_path + img_name # 每一个图片的地址
+        if(labels_list[i] == 1):
+          copyfile(img_path, 'F:\\Code\\buysell\\data\\train_data\\up\\' + str(symbol) + img_name)
+        elif (labels_list[i] == -1):
+          copyfile(img_path, 'F:\\Code\\buysell\\data\\train_data\\down\\' + str(symbol) + img_name)
+        else:
+          copyfile(img_path, 'F:\\Code\\buysell\\data\\train_data\\equal\\' + str(symbol) + img_name)
+
+
 
 
 def read_and_decode(filename_queue):  # up_or_down_train.tfrecords
@@ -207,3 +227,6 @@ def inputs(eval_data, data_dir, batch_size):
 #         # print(img)   
 #         cv2.imwrite('F:\Code\\buysell\data\pic_data\\raw_test\\%d.png' % i, img)
 #         print(label)
+
+
+prepare_pic_classification(stocks_list, "macd_pic\\")
