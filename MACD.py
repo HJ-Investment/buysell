@@ -227,6 +227,16 @@ def loss(logits, labels):
   """
   # Calculate the average cross entropy loss across the batch.
   labels = tf.cast(labels, tf.int64)
+  # sparse_softmax_cross_entropy_with_logits是softmax_cross_entropy_with_logits的易用版本，除了输入参数不同，作用和算法实现都是一样的。前面提到softmax_cross_entropy_with_logits的输入必须是类似onehot
+  # encoding的多维特征，但CIFAR - 10、ImageNet和大部分分类场景都只有一个分类目标，label值都是从0编码的整数，每次转成onehot
+  # encoding比较麻烦，有没有更好的方法呢？答案就是用sparse_softmax_cross_entropy_with_logits，它的第一个参数logits和前面一样，shape是[
+  #     batch_size, num_classes]，而第二个参数labels以前也必须是[batch_size, num_classes]
+  # 否则无法做Cross
+  # Entropy，这个函数改为限制更强的[batch_size]，而值必须是从0开始编码的int32或int64，而且值范围是[
+  #     0, num_class)，如果我们从1开始编码或者步长大于1，会导致某些label值超过这个范围，代码会直接报错退出。这也很好理解，TensorFlow通过这样的限制才能知道用户传入的3、6
+  # 或者9对应是哪个class，最后可以在内部高效实现类似的onehot
+  # encoding，这只是简化用户的输入而已，如果用户已经做了onehot
+  # encoding那可以直接使用不带“sparse”的softmax_cross_entropy_with_logits函数。
   cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
       labels=labels, logits=logits, name='cross_entropy_per_example')
   cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
