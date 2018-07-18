@@ -26,8 +26,8 @@ def decodeTFRecords(filename_queue):
     # img = tf.image.decode_png(img, channels=3)  # 这里，也可以解码为 1 通道
     # img = tf.image.resize_images(img, [128, 128])
 
-    # label = tf.cast(features['label'], tf.int32)  # 在流中抛出label张量
-    return features['label']
+    # label = tf.cast(features['image/class/label'], tf.int64)  # 在流中抛出label张量
+    return [features['image/class/label']]
 
 # if __name__ == '__main__':
 #     logging.basicConfig(level=logging.INFO)
@@ -51,8 +51,8 @@ def decodeTFRecords(filename_queue):
 
 
 with tf.Session() as sess:
-    filename_queue = tf.train.string_input_producer(['F:\Code\\buysell\data\pic_data\\tfrecords\\macd_train.tfrecord'])
-    reshaped_image = decodeTFRecords(filename_queue)
+    filename_queue = tf.train.string_input_producer(['F:\\Code\\buysell\\data\\tfrecords\\macd_train_00000-of-00002.tfrecord'])
+    label_fun = decodeTFRecords(filename_queue)
     # 这一步start_queue_runner很重要。
     # 我们之前有filename_queue = tf.train.string_input_producer(filenames)
     # 这个queue必须通过start_queue_runners才能启动
@@ -66,7 +66,7 @@ with tf.Session() as sess:
     # 保存30张图片
     for i in range(5):
         # 每次sess.run(reshaped_image)，都会取出一张图片
-        label = sess.run(reshaped_image)
+        label = sess.run(label_fun)
         # img = np.fromstring(img, np.uint8)
         # img = cv2.imdecode(img, cv2.IMREAD_COLOR)
         # img = tf.cast(img, tf.float32)
