@@ -5,13 +5,14 @@ import numpy as np
 import make_own_data
 import re
 import os
+import decode_tfrecord
 
 FLAGS = tf.app.flags.FLAGS
 
 # Basic model parameters.
-tf.app.flags.DEFINE_integer('batch_size', 32,
+tf.app.flags.DEFINE_integer('batch_size', 8,
                             """Number of images to process in a batch.""")
-tf.app.flags.DEFINE_string('data_dir', 'tfrecords\\macd_train.tfrecord',
+tf.app.flags.DEFINE_string('data_dir', 'F:\\Code\\buysell\\data\\tfrecords',
                            """Path to the MACD data directory.""")
 tf.app.flags.DEFINE_boolean('use_fp16', False,
                             """Train the model using fp16.""")
@@ -112,10 +113,10 @@ def inputs(eval_data):
   """
   if not FLAGS.data_dir:
     raise ValueError('Please supply a data_dir')
-  data_dir = FLAGS.data_dir
-  images, labels = make_own_data.inputs(eval_data=eval_data,
-                                        data_dir=data_dir,
-                                        batch_size=FLAGS.batch_size)
+  if eval_data:
+    images, labels = decode_tfrecord.input('train', FLAGS.data_dir)
+  else:
+    images, labels = decode_tfrecord.input('validation', FLAGS.data_dir)
   if FLAGS.use_fp16:
     images = tf.cast(images, tf.float16)
     labels = tf.cast(labels, tf.float16)

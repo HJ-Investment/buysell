@@ -229,4 +229,4 @@ def inputs(eval_data, data_dir, batch_size):
 #         print(label)
 
 
-prepare_pic_classification(stocks_list, "macd_pic\\")
+# prepare_pic_classification(stocks_list, "macd_pic\\")
