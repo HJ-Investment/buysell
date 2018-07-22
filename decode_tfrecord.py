@@ -9,6 +9,7 @@ tf.app.flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
 
+
 tf.app.flags.DEFINE_integer(
     'num_preprocessing_threads', 4,
     'The number of threads used to create the batches.')
@@ -20,10 +21,10 @@ tf.app.flags.DEFINE_integer(
     'class for the ImageNet dataset.')
 
 tf.app.flags.DEFINE_integer(
-    'train_image_size_width', 640, 'Train image size')
+    'train_image_size_width', 256, 'Train image size')
 
 tf.app.flags.DEFINE_integer(
-    'train_image_size_height', 480, 'Train image size')
+    'train_image_size_height', 256, 'Train image size')
 
 FLAGS = tf.app.flags.FLAGS
 slim = tf.contrib.slim
@@ -143,5 +144,6 @@ def input(split_name, dataset_dir, file_pattern=None, reader=None):
 
 #     for i in range(5):
 #         imgs, labs = sess.run(labels)
-#         print(labs)
-#         # cv2.imwrite('F:\Code\\buysell\data\pic_data\\raw_test\\%d.png' % i, img)
+#         # print(labs)
+#         for img in imgs:
+#             cv2.imwrite('F:\Code\\buysell\data\pic_data\\raw_test\\%d.png' % i, img)

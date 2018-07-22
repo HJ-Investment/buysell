@@ -409,3 +409,4 @@ def main(command_args):
                      command_args.validation_shards, command_args.labels_file, command_args)
     _process_dataset('train', command_args.train_directory,
                      command_args.train_shards, command_args.labels_file, command_args)
+

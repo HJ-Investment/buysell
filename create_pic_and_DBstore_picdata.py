@@ -27,31 +27,6 @@ logger.addHandler(ch)
 
 
 
-def connect_db():
-    try:
-        db = pymysql.connect("45.76.77.76", "root", "123456654321", "stockMarketMoodAnalysis", charset='utf8')
-        cursor = db.cursor()
-        return {"db": db, "cursor": cursor,"result":1}
-    except:
-        return {"db": '', "cursor": '',"result":0}
-
-
-
-def modify_data(db,cursor,modify_sql):
-    try:
-        cursor.execute(modify_sql)
-        db.commit()
-        return 1
-    except():
-        db.rollback()
-        print("insert_sql: %s"%modify_sql)
-        logger.info("insert_sql: %s"%modify_sql)
-        logger.info("modify_db_fail")
-        return 0
-def db_close(db):
-    db.close()
-
-
 #获取数据
 def get_tushare_data(symbol):
 
@@ -142,7 +117,7 @@ def create_kdj_pic(symbol,df,sequence):
     if not os.path.exists('F:\Code\\buysell\data\pic_data\kdj_pic\\' + symbol):
         os.makedirs('F:\Code\\buysell\data\pic_data\kdj_pic\\' + symbol)
     fig=plt.gcf()
-    # fig = plt.figure(figsize=(12.8,12.8))  ###设置图形的大小  figsize=(12.8,12.8) 保存的时候dpi=10可以得到128*128的图片
+    fig = plt.figure(figsize=(12.8,12.8))  ###设置图形的大小  figsize=(12.8,12.8) 保存的时候dpi=10可以得到128*128的图片
     print(df)
     try:
         sig_k=df.k
@@ -153,13 +128,13 @@ def create_kdj_pic(symbol,df,sequence):
         plt.plot(sig_j.index,sig_j, label='j')
         plt.axis('off')
         # plt.show()
-        fig.savefig('F:\Code\\buysell\data\pic_data\kdj_pic\\'+symbol+'\\'+str(sequence))
+        fig.savefig('F:\Code\\buysell\data\pic_data\kdj_pic\\'+symbol+'\\'+str(sequence), dpi=20)
         plt.close()
         return 1
     except:
         logger.info('stock:%s;kdj画图到第%s失败'%(symbol,str(sequence)))
         return 0
-# df = pd.read_csv('E:\pic_data\datacsv\\' + '600000' + '.csv', sep=',')
+# df = pd.read_csv('F:\\Code\\buysell\\data\\pic_data\\datacsv\\' + '600000' + '.csv', sep=',')
 # create_kdj_pic("600000",df[0:30],0)
 
 
@@ -167,17 +142,20 @@ def create_macd_pic(symbol,df,sequence):
     if not os.path.exists('F:\Code\\buysell\data\pic_data\macd_pic\\' + symbol):
         os.makedirs('F:\Code\\buysell\data\pic_data\macd_pic\\' + symbol)
     fig = plt.gcf()
+    fig = plt.figure(figsize=(12.8,12.8))
     try:
         plt.plot(df.index, df['MACD'], label='macd dif')#快线
         plt.plot(df.index, df['MACDsignal'], label='signal dea')# 慢线
         plt.bar(df.index, df['MACDhist']*2, label='hist bar')
         plt.axis('off')
-        fig.savefig('F:\Code\\buysell\data\pic_data\macd_pic\\' + symbol + '\\' + str(sequence))
+        fig.savefig("F:\\Code\\buysell\\data\\pic_data\\macd_pic\\" + symbol + '\\' + str(sequence), dpi=20)
         plt.close()
         return 1
     except:
         logger.info('stock:%s;macd画图到第%s失败' % (symbol, str(sequence)))
         return 0
+# df = pd.read_csv('F:\\Code\\buysell\\data\\pic_data\\datacsv\\' + '600000' + '.csv', sep=',')
+# create_macd_pic("600000",df[0:30],0)
 
 def create_pics_and_datas(symbol,pic_type=None):
     data_dict_list = []
@@ -195,12 +173,12 @@ def create_pics_and_datas(symbol,pic_type=None):
             pic_res=create_macd_pic(symbol, df[0 + i:30 + i], i)  # 画图的
             if pic_res==1:
                 pic_count=pic_count+1
-        close_data = deal_close_datas(symbol,df,i)
+        # close_data = deal_close_datas(symbol,df,i)
 
-        data_dict_list.append(close_data)
+        # data_dict_list.append(close_data)
     print("stock:"+symbol+';画图数量：'+str(pic_count))
     logger.info('stock:%s;画图数量%s' % (symbol, str(pic_count)))
-    return data_dict_list
+    # return data_dict_list
 
 def store_csv(symbol,data_dict_list,pic_type=None):
     df = pd.DataFrame(data_dict_list)
@@ -208,59 +186,13 @@ def store_csv(symbol,data_dict_list,pic_type=None):
     df.to_csv(path_or_buf='F:\Code\\buysell\data\pic_data\datacsv\\'+symbol+'_final.csv',sep=',',index=True)
 
 
-def store_database(symbol,data_dict_list,db_resp,pic_type=None):
 
-    db = db_resp['db']
-    cursor = db_resp['cursor']
-    data_count = 0
-    if pic_type == "kdj":
-        path = 'E:\pic_data\kdj_pic\\'
-    else:
-        path = 'E:\pic_data\macd_pic\\'
-    for i in range(len(data_dict_list)):
-        data_dict=data_dict_list[i]
-        img_read = cv2.imread(path+symbol+'\\'+str(i)+'.png', 2)
-        img = cv2.resize(img_read, (128, 128))
-
-        img_list = img.tolist()
-        img_dict = {}
-        img_dict['name'] = str(i)
-        img_dict['content'] = img_list
-        img_json_data = json.dumps(img_dict)
-
-        ##这段代码验证放到数据库里的矩阵能否画图
-        # img_json_data = json.loads(img_json_data)
-        # img_list = img_json_data['content']
-        # img = np.asarray(img_list)
-        # # np.savetxt('E:\\new.csv', img, delimiter=',')
-        # img=img.astype(dtype="uint8")
-        # cv2.namedWindow("Image")
-        # cv2.imshow("Image", img)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        #################
-        create_dat=str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-        insert_sql = "INSERT INTO image_array_data_test (stock,sequence,close_data,day_one,day_two,day_three,day_four,day_five,day_one_close,day_two_close,day_three_close,day_four_close,day_five_close,start_time,end_time,image_array,create_dat) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')"%(data_dict["stock"],data_dict["sequence"],data_dict["close"],
-                        data_dict["day_one"],data_dict["day_two"],data_dict["day_three"],
-                        data_dict["day_four"],data_dict["day_five"],
-                        data_dict["day_one_close"],data_dict["day_two_close"],
-                        data_dict["day_three_close"],data_dict["day_four_close"],data_dict["day_five_close"],
-                        data_dict["start_time"],data_dict["end_time"],pymysql.escape_string(img_json_data),create_dat)
-        # s_time=time.time()
-        modify_data(db, cursor, insert_sql)
-        data_count=data_count+1
-        # e_time=time.time()
-        # legency=e_time-s_time
-    print("stock:"+symbol+'存入数据条数：'+str(data_count))
-    logger.info('stock:%s;存入数据条数%s' % (symbol, str(data_count)))
-
-
-##画图并保存图片到本地。从本地读图片数据并保存到远程数据库
+##画图并保存图片到本地。
 stocks_list=['601328','600999', '601628', '600016', '601985', '600019', '600028', '601668', '601878', '601688', '601669', '601390', '601211', '601006', '601989', '601988', '600104', '600518', '601398', '600958', '600309', '601857','600030', '601318', '600837', '600036', '600050', '600547', '601766', '601166', '601601', '601229', '600919', '601169', '600029', '601800', '600000', '600887', '600340', '601881', '601088','603993', '600519', '601336', '601186', '600606', '601818', '600048', '600111', '601288' ]
-# stocks_list=['600000']
-# get_tushare_data(stocks_list[0])
-# for stock in stocks_list:
-#     get_tushare_data(stock)
+# # stocks_list=['600000']
+# # get_tushare_data(stocks_list[0])
+# # for stock in stocks_list:
+# #     get_tushare_data(stock)
 dat = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
 logger.info('start_time:%s'%dat)
 # db_resp = connect_db()
@@ -273,7 +205,7 @@ for stock in stocks_list:
     logger.info('stock:%s;画图耗时%ss' % (stock, str(end_time-start_time)))
     store_start_time=time.time()
     # store_database(stock,data_dict_list,db_resp,pic_type='macd')
-    store_csv(stock,data_dict_list,pic_type='macd')
+    # store_csv(stock,data_dict_list,pic_type='macd')
     store_end_time=time.time()
     store_latency=str(store_end_time-store_start_time)
     stock_end_time = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
@@ -281,9 +213,9 @@ for stock in stocks_list:
     logger.info('进度:%d' % i)
     i=i+1
 
-# db_close(db_resp['db'])
-end_dat = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-logger.info('end_time:%s' %str(end_dat))
+# # db_close(db_resp['db'])
+# end_dat = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
+# logger.info('end_time:%s' %str(end_dat))
 
 
 

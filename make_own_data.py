@@ -89,11 +89,11 @@ def prepare_pic_classification(stocks_list, dataset_dir):
       for i, img_name in enumerate(file_list_sorted):
         img_path = class_path + img_name # 每一个图片的地址
         if(labels_list[i] == 1):
-          copyfile(img_path, 'F:\\Code\\buysell\\data\\train_data\\up\\' + str(symbol) + img_name)
+          copyfile(img_path, 'F:\\Code\\buysell\\data\\train\\up\\' + str(symbol) + img_name)
         elif (labels_list[i] == -1):
-          copyfile(img_path, 'F:\\Code\\buysell\\data\\train_data\\down\\' + str(symbol) + img_name)
+          copyfile(img_path, 'F:\\Code\\buysell\\data\\train\\down\\' + str(symbol) + img_name)
         else:
-          copyfile(img_path, 'F:\\Code\\buysell\\data\\train_data\\equal\\' + str(symbol) + img_name)
+          copyfile(img_path, 'F:\\Code\\buysell\\data\\train\\equal\\' + str(symbol) + img_name)
 
 
 
@@ -229,4 +229,4 @@ def inputs(eval_data, data_dir, batch_size):
 #         print(label)
 
 
-# prepare_pic_classification(stocks_list, "macd_pic\\")
+prepare_pic_classification(stocks_list, "macd_pic\\")
