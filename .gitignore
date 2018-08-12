@@ -216,3 +216,5 @@ pip-log.txt
 .mr.developer.cfg
 .idea/*
 Data/*
+slim/macd/pretrained/*
+slim/macd/tmp/*

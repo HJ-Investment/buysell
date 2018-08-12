@@ -71,19 +71,9 @@ def optimize(loss, learning_rate, global_step):
 
 
 def train():
-    # pre_trained_weights = './/vgg16_pretrain//vgg16.npy'
-    # data_dir = '../cifar10_data/cifar-10-batches-bin'
-    train_log_dir = './tmp/VGG/train'
-    val_log_dir = './tmp/VGG/val'
+    train_log_dir = 'F:\\tmp\\buysell\\VGG_train\\train'
+    val_log_dir = 'F:\\tmp\\buysell\\VGG_train\\val'
 
-    # tra_image_batch, tra_label_batch = decode_tfrecord.read_cifar10(data_dir=data_dir,
-    #                                              is_train=True,
-    #                                              batch_size= BATCH_SIZE,
-    #                                              shuffle=True)
-    # val_image_batch, val_label_batch = decode_tfrecord.read_cifar10(data_dir=data_dir,
-    #                                              is_train=False,
-    #                                              batch_size= BATCH_SIZE,
-    #                                              shuffle=False)
     tra_image_batch, tra_label_batch = decode_tfrecord.input('train', FLAGS.data_dir)
     val_image_batch, val_label_batch = decode_tfrecord.input('validation', FLAGS.data_dir)
 

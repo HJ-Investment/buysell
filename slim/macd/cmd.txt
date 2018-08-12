@@ -1,0 +1,27 @@
+python train_image_classifier.py \
+    --train_dir=F:\\Code\\Deep-Learning-21-Examples-master\\chapter_3\\slim\\satellite\\tmp\\train_dir \
+    --dataset_dir=F:\\Code\\Deep-Learning-21-Examples-master\\chapter_3\\slim\\satellite\\data \
+    --dataset_name=satellite \
+    --dataset_split_name=train \
+    --model_name=inception_v3 \
+    --checkpoint_path=F:\\Code\\Deep-Learning-21-Examples-master\\chapter_3\\slim\\satellite\\pretrained\\inception_v3.ckpt \
+    --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits \
+    --trainable_scopes=InceptionV3/Logits,InceptionV3/AuxLogits
+    --max_number_of_steps=10000 \
+    --batch_size=32 \
+    --learning_rate=0.001 \
+    --learning_rate_decay_type=fixed \
+    --save_interval_secs=100 \
+    --save_summaries_secs=30 \
+    --log_every_n_steps=10 \
+    --optimizer=rmsprop \
+    --weight_decay=0.00004
+
+C:/Users/VIP/AppData/Local/conda/conda/envs/TensorFlow/python.exe F:/Code/buysell/slim/eval_image_classifier.py --checkpoint_path=F:/Code/buysell/slim/macd/tmp/train_dir/part --eval_dir=F:/Code/buysell/slim/macd/tmp/eval_dir/part --dataset_name=macd --dataset_split_name=validation --dataset_dir=F:/Code/buysell/data/tfrecords --model_name=inception_v3
+
+
+C:/Users/VIP/AppData/Local/conda/conda/envs/TensorFlow/python.exe F:/Code/buysell/slim/train_image_classifier.py --train_dir=F:/Code/buysell/slim/macd/tmp/train_dir/full --dataset_dir=F:/Code/buysell/data/tfrecords --dataset_name=macd --dataset_split_name=train --model_name=inception_v3 --checkpoint_path=F:/Code/buysell/slim/macd/pretrained/inception_v3.ckpt --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits --trainable_scopes=InceptionV3/Logits,InceptionV3/AuxLogit --max_number_of_steps=10000 --batch_size=32 --learning_rate=0.0003 --learning_rate_decay_type=fixed --save_interval_secs=100 --save_summaries_secs=15 --log_every_n_steps=10 --optimizer=rmsprop --weight_decay=0.00004 
+C:/Users/VIP/AppData/Local/conda/conda/envs/TensorFlow/python.exe F:/Code/buysell/slim/train_image_classifier.py --train_dir=F:/Code/buysell/slim/macd/tmp/train_dir/part --dataset_dir=F:/Code/buysell/data/tfrecords --dataset_name=macd --dataset_split_name=train --model_name=inception_v3 --checkpoint_path=F:/Code/buysell/slim/macd/pretrained/inception_v3.ckpt --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits --max_number_of_steps=10000 --batch_size=32 --learning_rate=0.00003 --learning_rate_decay_type=fixed --save_interval_secs=100 --save_summaries_secs=15 --log_every_n_steps=10 --optimizer=rmsprop
+
+python train_image_classifier.py --train_dir=satellite/tmp/train_dir/part --dataset_name=satellite --dataset_split_name=train --dataset_dir=satellite/data --model_name=inception_v3 --checkpoint_path=satellite/pretrained/inception_v3.ckpt --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits --trainable_scopes=InceptionV3/Logits,InceptionV3/AuxLogits --max_number_of_steps=100000 --batch_size=32 --learning_rate=0.001 --learning_rate_decay_type=fixed --save_interval_secs=300 --save_summaries_secs=30 --log_every_n_steps=10 --optimizer=rmsprop --weight_decay=0.00004 --num_clones=2
+python train_image_classifier.py --train_dir=satellite/tmp/train_dir/full --dataset_name=satellite --dataset_split_name=train --dataset_dir=satellite/data --model_name=inception_v3 --checkpoint_path=satellite/pretrained/inception_v3.ckpt --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits --max_number_of_steps=100000 --batch_size=32 --learning_rate=0.001 --learning_rate_decay_type=fixed --save_interval_secs=300 --save_summaries_secs=30 --log_every_n_steps=10 --optimizer=rmsprop --weight_decay=0.00004
