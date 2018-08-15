@@ -16,9 +16,6 @@ trade_config = {
   "remote.trade.password": "eyJhbGciOiJIUzI1NiJ9.eyJjcmVhdGVfdGltZSI6IjE1MTcwNjAxMDgyOTMiLCJpc3MiOiJhdXRoMCIsImlkIjoiMTg2NTI0MjA0MzQifQ.b1ejSpbEVS7LhbsveZ5kvbWgUs7fnUd0-CBakPwNUu4"
 }
 
-api = DataApi(addr="tcp://data.tushare.org:8910")
-result, msg = api.login("18652420434", "eyJhbGciOiJIUzI1NiJ9.eyJjcmVhdGVfdGltZSI6IjE1MTcwNjAxMDgyOTMiLCJpc3MiOiJhdXRoMCIsImlkIjoiMTg2NTI0MjA0MzQifQ.b1ejSpbEVS7LhbsveZ5kvbWgUs7fnUd0-CBakPwNUu4")
-
 dataview_store_folder = './data/prepared'
 
 def download_data():
@@ -43,11 +40,11 @@ def load_data(symbol):
 
     df = pd.DataFrame()
 
-    df['close'] = np.array(dv.get_ts('close', symbol=symbol, start_date=20160101, end_date=20180430)['close']
-    df['open']  = dv.get_ts('open', symbol=symbol, start_date=20160101, end_date=20180430)['open']
-    df['high']  = dv.get_ts('high', symbol=symbol, start_date=20160101, end_date=20180430)['high']
-    df['low']   = dv.get_ts('low', symbol=symbol, start_date=20160101, end_date=20180430)['low']
-
+    df['close'] = dv.get_ts('close', symbol=symbol, start_date=20160101, end_date=20180430)['600016.SH']
+    df['open']  = dv.get_ts('open', symbol=symbol, start_date=20160101, end_date=20180430)['600016.SH']
+    df['high']  = dv.get_ts('high', symbol=symbol, start_date=20160101, end_date=20180430)['600016.SH']
+    df['low']   = dv.get_ts('low', symbol=symbol, start_date=20160101, end_date=20180430)['600016.SH']
+    
     return df
 
 def get_data(symbol=None):
@@ -58,9 +55,17 @@ def get_data(symbol=None):
 
 
         print(one)
-        one_symbol = load_data(one+'.SH')
 
-        print(one_symbol)
+        api = DataApi(addr="tcp://data.quantos.org:8910")
+        result, msg = api.login("18652420434", "eyJhbGciOiJIUzI1NiJ9.eyJjcmVhdGVfdGltZSI6IjE1MTcwNjAxMDgyOTMiLCJpc3MiOiJhdXRoMCIsImlkIjoiMTg2NTI0MjA0MzQifQ.b1ejSpbEVS7LhbsveZ5kvbWgUs7fnUd0-CBakPwNUu4")
+        print(result)
+        data, msg = api.query(
+                view="lb.indexCons", 
+                fields="symbol", 
+                filter="index_code=000016.SH&start_date=20180801&end_date=20180831", 
+                data_format='pandas')
+
+        print(data)
     else:
         print('11')
 
