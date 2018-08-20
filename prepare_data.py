@@ -3,8 +3,11 @@
 from jaqs.data import RemoteDataService, DataView
 import tushare as ts
 from jaqs.data import DataApi
+import numpy as np
 import pandas as pd
 import talib
+import os
+import matplotlib.pyplot as plt
 
 data_config = {
   "remote.data.address": "tcp://data.quantos.org:8910",
@@ -21,7 +24,7 @@ dataview_store_folder = './data/prepared'
 
 
 def download_data():
-    dataview_props = {'start_date': 20160101, 'end_date': 20180731,
+    dataview_props = {'start_date': 20080101, 'end_date': 20180731,
                       'universe': '000016.SH',
                       'fields': 'open,close,high,low',
                       'freq': 1}
@@ -42,11 +45,11 @@ def load_data(symbol):
 
     df = pd.DataFrame()
 
-    df['close'] = dv.get_ts('close', symbol=symbol, start_date=20160101, end_date=20180430)['600016.SH']
-    df['open']  = dv.get_ts('open', symbol=symbol, start_date=20160101, end_date=20180430)['600016.SH']
-    df['high']  = dv.get_ts('high', symbol=symbol, start_date=20160101, end_date=20180430)['600016.SH']
-    df['low']   = dv.get_ts('low', symbol=symbol, start_date=20160101, end_date=20180430)['600016.SH']
-    
+    df['close'] = dv.get_ts('close', symbol=symbol, start_date=20080101, end_date=20171231)[symbol]
+    df['open']  = dv.get_ts('open', symbol=symbol, start_date=20080101, end_date=20171231)[symbol]
+    df['high']  = dv.get_ts('high', symbol=symbol, start_date=20080101, end_date=20171231)[symbol]
+    df['low']   = dv.get_ts('low', symbol=symbol, start_date=20080101, end_date=20171231)[symbol]
+
     return df
 
 
@@ -60,10 +63,10 @@ def prepare_kdj(df, n, ksgn='close'):
             df, pd.dataframe格式数据源,
             增加了一栏：_{n}，输出数据
     '''
-    low_list = pd.rolling_min(df['low'], n)
-    low_list.fillna(value=pd.expanding_min(df['low']), inplace=True)
-    high_list = pd.rolling_max(df['high'], n)
-    high_list.fillna(value=pd.expanding_max(df['high']), inplace=True)
+    low_list = df['low'].rolling(window=n, center=False).min()  # pd.rolling_min(df['low'], n)
+    low_list.fillna(value=df['low'].expanding(min_periods=1).min(), inplace=True)
+    high_list = df['high'].rolling(window=n, center=False).max()  # pd.rolling_max(df['high'], n)
+    high_list.fillna(value=df['high'].expanding(min_periods=1).max(), inplace=True)
     rsv = (df[ksgn] - low_list) / (high_list - low_list) * 100
 
     df['k'] = pd.ewma(rsv, com=2)
@@ -73,7 +76,14 @@ def prepare_kdj(df, n, ksgn='close'):
     return df
 
 
+def save_csv(symbol, df):
+    df.to_csv(path_or_buf='./data/prepared/datacsv/' + symbol + '.csv', sep=',', index=True)
+
+
 def get_data(symbol=None):
+    if not os.path.exists('./data/prepared/datacsv/'):
+        os.makedirs('./data/prepared/datacsv/')
+
     if not symbol:
         api = DataApi(addr="tcp://data.quantos.org:8910")
         result, msg = api.login("18652420434", "eyJhbGciOiJIUzI1NiJ9.eyJjcmVhdGVfdGltZSI6IjE1MTcwNjAxMDgyOTMiLCJpc3MiOiJhdXRoMCIsImlkIjoiMTg2NTI0MjA0MzQifQ.b1ejSpbEVS7LhbsveZ5kvbWgUs7fnUd0-CBakPwNUu4")
@@ -94,10 +104,10 @@ def get_data(symbol=None):
             df['MACD'], df['MACDsignal'], df['MACDhist'] = talib.MACD(np.array(close),
                                                                       fastperiod=12, slowperiod=26, signalperiod=9)
             df = df.sort_index()
-            df.index = pd.to_datetime(df.index, format='%Y-%m-%d')
+            df.index = pd.to_datetime(df.index, format='%Y%m%d')
             df = prepare_kdj(df, 9, 'close')  # 计算好kdj之后从13行开始取数据,计算出来的kdj比较准确
             df = df[34:]
-            df.to_csv(path_or_buf='F:\Code\\buysell\data\pic_data\datacsv\\' + symbol + '.csv', sep=',', index=True)
+            save_csv(sym, df)
 
     else:
         df = load_data(symbol)
@@ -106,10 +116,49 @@ def get_data(symbol=None):
         df['MACD'], df['MACDsignal'], df['MACDhist'] = talib.MACD(np.array(close),
                                                                   fastperiod=12, slowperiod=26, signalperiod=9)
         df = df.sort_index()
-        df.index = pd.to_datetime(df.index, format='%Y-%m-%d')
+        df.index = pd.to_datetime(df.index, format='%Y%m%d')
         df = prepare_kdj(df, 9, 'close')  # 计算好kdj之后从13行开始取数据,计算出来的kdj比较准确
         df = df[34:]
-        df.to_csv(path_or_buf='F:\Code\\buysell\data\pic_data\datacsv\\' + symbol + '.csv', sep=',', index=True)
+        save_csv(symbol, df)
 
 
-get_data()
+def draw_kdj_pic(symbol, df, sequence):
+    if not os.path.exists('./data/prepared/pic_data/kdj_pic/' + symbol):
+        os.makedirs('./data/prepared/pic_data/kdj_pic/' + symbol)
+    # fig = plt.gcf()
+    fig = plt.figure(figsize=(12.8, 12.8))  # 设置图形的大小,figsize=(12.8,12.8) 保存的时候dpi=10可以得到128*128的图片
+    print(df)
+    sig_k = df.k
+    sig_d = df.d
+    sig_j = df.k*3 - df.d*2
+    plt.plot(sig_k.index, sig_k, label='k')
+    plt.plot(sig_d.index, sig_d, label='d')
+    plt.plot(sig_j.index, sig_j, label='j')
+    plt.axis('off')
+    # plt.show()
+    fig.savefig('./data/prepared/pic_data/kdj_pic/'+symbol+'/'+str(sequence), dpi=20)
+    plt.close()
+    return 1
+
+
+def draw_pic(symbol, pic_type='kdj'):
+    df = pd.read_csv('./data/prepared/datacsv/' + symbol + '.csv', sep=',')
+    df.index = pd.to_datetime(df['trade_date'], format='%Y/%m/%d')
+    df = df['2017-01-01':'2017-12-31']
+    pic_count = 0
+    if pic_type == 'kdj':
+        for i in range(len(df) - 5):
+            pic_res = draw_kdj_pic(symbol, df[0 + i:5 + i], i)  # 画图的
+            if pic_res == 1:
+                pic_count += 1
+    # elif pic_type == 'macd':
+    #     for i in range(len(df) - 34):
+    #         pic_res = create_macd_pic(symbol, df[0 + i:30 + i], i)  # 画图的
+    #         if pic_res == 1:
+    #             pic_count = pic_count + 1
+
+    print("stock:" + symbol + ';画图数量：' + str(pic_count))
+
+
+# get_data('600000.SH')
+draw_pic('600000.SH')
