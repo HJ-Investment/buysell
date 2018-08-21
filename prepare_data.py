@@ -76,6 +76,16 @@ def prepare_kdj(df, n, ksgn='close'):
     return df
 
 
+def calculator_close(df):
+    df = df.reset_index()
+    close_five = df['close'][5:]
+    # print(close_five)
+    df['close_five_value'] = close_five.reset_index(drop=True)
+    print(df)
+    df['close_five'] = (df['close_five_value'] - df['close']) / df['close']
+    return df
+
+
 def save_csv(symbol, df):
     df.to_csv(path_or_buf='./data/prepared/datacsv/' + symbol + '.csv', sep=',', index=True)
 
@@ -115,10 +125,11 @@ def get_data(symbol=None):
         # prepare macd data
         df['MACD'], df['MACDsignal'], df['MACDhist'] = talib.MACD(np.array(close),
                                                                   fastperiod=12, slowperiod=26, signalperiod=9)
-        df = df.sort_index()
-        df.index = pd.to_datetime(df.index, format='%Y%m%d')
+        # df = df.sort_index()
+        # df.index = pd.to_datetime(df.index, format='%Y%m%d')
         df = prepare_kdj(df, 9, 'close')  # 计算好kdj之后从13行开始取数据,计算出来的kdj比较准确
         df = df[34:]
+        df = calculator_close(df)
         save_csv(symbol, df)
 
 
@@ -146,19 +157,18 @@ def draw_pic(symbol, pic_type='kdj'):
     df.index = pd.to_datetime(df['trade_date'], format='%Y/%m/%d')
     df = df['2017-01-01':'2017-12-31']
     pic_count = 0
-    if pic_type == 'kdj':
-        for i in range(len(df) - 5):
+    for i in range(len(df) - 10):
+        if pic_type == 'kdj':
             pic_res = draw_kdj_pic(symbol, df[0 + i:5 + i], i)  # 画图的
             if pic_res == 1:
                 pic_count += 1
-    # elif pic_type == 'macd':
-    #     for i in range(len(df) - 34):
-    #         pic_res = create_macd_pic(symbol, df[0 + i:30 + i], i)  # 画图的
-    #         if pic_res == 1:
-    #             pic_count = pic_count + 1
+        # elif pic_type == 'macd':
+        #     pic_res = create_macd_pic(symbol, df[0 + i:30 + i], i)  # 画图的
+        #     if pic_res == 1:
+        #         pic_count = pic_count + 1
 
     print("stock:" + symbol + ';画图数量：' + str(pic_count))
 
 
-# get_data('600000.SH')
-draw_pic('600000.SH')
+get_data('600000.SH')
+# draw_pic('600000.SH')
