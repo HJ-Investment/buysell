@@ -134,11 +134,16 @@ def get_data(symbol=None):
 
 
 def draw_kdj_pic(symbol, df, sequence):
-    if not os.path.exists('./data/prepared/pic_data/kdj_pic/' + symbol):
-        os.makedirs('./data/prepared/pic_data/kdj_pic/' + symbol)
+    # if not os.path.exists('./data/prepared/pic_data/kdj_pic/' + symbol):
+    #     os.makedirs('./data/prepared/pic_data/kdj_pic/' + symbol)
+    if not os.path.exists('./data/prepared/pic_data/kdj_pic/up'):
+        os.makedirs('./data/prepared/pic_data/kdj_pic/up')
+    if not os.path.exists('./data/prepared/pic_data/kdj_pic/equal'):
+        os.makedirs('./data/prepared/pic_data/kdj_pic/equal')
+    if not os.path.exists('./data/prepared/pic_data/kdj_pic/down'):
+        os.makedirs('./data/prepared/pic_data/kdj_pic/down')
     # fig = plt.gcf()
     fig = plt.figure(figsize=(12.8, 12.8))  # 设置图形的大小,figsize=(12.8,12.8) 保存的时候dpi=10可以得到128*128的图片
-    print(df)
     sig_k = df.k
     sig_d = df.d
     sig_j = df.k*3 - df.d*2
@@ -147,15 +152,21 @@ def draw_kdj_pic(symbol, df, sequence):
     plt.plot(sig_j.index, sig_j, label='j')
     plt.axis('off')
     # plt.show()
-    fig.savefig('./data/prepared/pic_data/kdj_pic/'+symbol+'/'+str(sequence), dpi=20)
+    print(df['close_five'][4])
+    if df['close_five'][4] > 0.05:
+        fig.savefig('./data/prepared/pic_data/kdj_pic/up/' + symbol + str(sequence), dpi=20)
+    elif df['close_five'][4] < -0.05:
+        fig.savefig('./data/prepared/pic_data/kdj_pic/down/' + symbol + str(sequence), dpi=20)
+    else:
+        fig.savefig('./data/prepared/pic_data/kdj_pic/equal/' + symbol + str(sequence), dpi=20)
     plt.close()
     return 1
 
 
 def draw_pic(symbol, pic_type='kdj'):
     df = pd.read_csv('./data/prepared/datacsv/' + symbol + '.csv', sep=',')
-    df.index = pd.to_datetime(df['trade_date'], format='%Y/%m/%d')
-    df = df['2017-01-01':'2017-12-31']
+    df.index = pd.to_datetime(df['trade_date'], format='%Y%m%d')
+    # df = df['2017-01-01':'2017-12-31']
     pic_count = 0
     for i in range(len(df) - 10):
         if pic_type == 'kdj':
@@ -170,5 +181,5 @@ def draw_pic(symbol, pic_type='kdj'):
     print("stock:" + symbol + ';画图数量：' + str(pic_count))
 
 
-get_data('600000.SH')
-# draw_pic('600000.SH')
+# get_data('600000.SH')
+draw_pic('600000.SH')
