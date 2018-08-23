@@ -117,6 +117,7 @@ def get_data(symbol=None):
             df.index = pd.to_datetime(df.index, format='%Y%m%d')
             df = prepare_kdj(df, 9, 'close')  # 计算好kdj之后从13行开始取数据,计算出来的kdj比较准确
             df = df[34:]
+            df = calculator_close(df)
             save_csv(sym, df)
 
     else:
@@ -153,17 +154,46 @@ def draw_kdj_pic(symbol, df, sequence):
     plt.axis('off')
     # plt.show()
     print(df['close_five'][4])
-    if df['close_five'][4] > 0.05:
-        fig.savefig('./data/prepared/pic_data/kdj_pic/up/' + symbol + str(sequence), dpi=20)
-    elif df['close_five'][4] < -0.05:
-        fig.savefig('./data/prepared/pic_data/kdj_pic/down/' + symbol + str(sequence), dpi=20)
+    str_symbol = symbol[:-3]
+    if df['close_five'][4] >= 0.05:
+        fig.savefig('./data/prepared/pic_data/kdj_pic/up/' + str_symbol + '_' + str(sequence), dpi=20)
+    elif df['close_five'][4] <= -0.05:
+        fig.savefig('./data/prepared/pic_data/kdj_pic/down/' + str_symbol + '_' + str(sequence), dpi=20)
     else:
-        fig.savefig('./data/prepared/pic_data/kdj_pic/equal/' + symbol + str(sequence), dpi=20)
+        fig.savefig('./data/prepared/pic_data/kdj_pic/equal/' + str_symbol + '_' + str(sequence), dpi=20)
     plt.close()
+
     return 1
 
 
-def draw_pic(symbol, pic_type='kdj'):
+def create_macd_pic(symbol, df, sequence):
+    if not os.path.exists('./data/prepared/pic_data/macd_pic/up'):
+        os.makedirs('./data/prepared/pic_data/macd_pic/up')
+    if not os.path.exists('./data/prepared/pic_data/macd_pic/equal'):
+        os.makedirs('./data/prepared/pic_data/macd_pic/equal')
+    if not os.path.exists('./data/prepared/pic_data/macd_pic/down'):
+        os.makedirs('./data/prepared/pic_data/macd_pic/down')
+
+    fig = plt.figure(figsize=(12.8,12.8))
+
+    plt.plot(df.index, df['MACD'], label='macd dif')  # 快线
+    plt.plot(df.index, df['MACDsignal'], label='signal dea')  # 慢线
+    plt.bar(df.index, df['MACDhist']*2, label='hist bar')
+    plt.axis('off')
+
+    str_symbol = symbol[:-3]
+    if df['close_five'][4] >= 0.05:
+        fig.savefig('./data/prepared/pic_data/macd_pic/up/' + str_symbol + '_' + str(sequence), dpi=20)
+    elif df['close_five'][4] <= -0.05:
+        fig.savefig('./data/prepared/pic_data/macd_pic/down/' + str_symbol + '_' + str(sequence), dpi=20)
+    else:
+        fig.savefig('./data/prepared/pic_data/macd_pic/equal/' + str_symbol + '_' + str(sequence), dpi=20)
+    plt.close()
+
+    return 1
+
+
+def draw_pic(symbol, pic_type=None):
     df = pd.read_csv('./data/prepared/datacsv/' + symbol + '.csv', sep=',')
     df.index = pd.to_datetime(df['trade_date'], format='%Y%m%d')
     # df = df['2017-01-01':'2017-12-31']
@@ -173,10 +203,17 @@ def draw_pic(symbol, pic_type='kdj'):
             pic_res = draw_kdj_pic(symbol, df[0 + i:5 + i], i)  # 画图的
             if pic_res == 1:
                 pic_count += 1
-        # elif pic_type == 'macd':
-        #     pic_res = create_macd_pic(symbol, df[0 + i:30 + i], i)  # 画图的
-        #     if pic_res == 1:
-        #         pic_count = pic_count + 1
+        elif pic_type == 'macd':
+            pic_res = create_macd_pic(symbol, df[0 + i:5 + i], i)  # 画图的
+            if pic_res == 1:
+                pic_count += 1
+        else:
+            pic_res_kdj = draw_kdj_pic(symbol, df[0 + i:5 + i], i)
+            pic_res_macd = create_macd_pic(symbol, df[0 + i:5 + i], i)
+            if pic_res_kdj == 1:
+                pic_count += 1
+            if pic_res_macd == 1:
+                pic_count += 1
 
     print("stock:" + symbol + ';画图数量：' + str(pic_count))
 
