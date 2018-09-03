@@ -9,9 +9,9 @@ from datasets import dataset_utils
 
 slim = tf.contrib.slim
 
-_FILE_PATTERN = 'macd_%s_*.tfrecord'
+_FILE_PATTERN = 'kdj_%s_*.tfrecord'
 
-SPLITS_TO_SIZES = {'train': 9162, 'validation': 3927}
+SPLITS_TO_SIZES = {'train': 9081, 'validation': 3893}
 
 _NUM_CLASSES = 3
 

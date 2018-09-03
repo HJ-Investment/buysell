@@ -218,3 +218,5 @@ pip-log.txt
 Data/*
 slim/macd/pretrained/*
 slim/macd/tmp/*
+slim/kdj/pretrained/*
+slim/kdj/tmp/*

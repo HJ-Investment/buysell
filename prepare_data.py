@@ -8,6 +8,8 @@ import pandas as pd
 import talib
 import os
 import matplotlib.pyplot as plt
+from random import sample
+from shutil import copyfile
 
 data_config = {
   "remote.data.address": "tcp://data.quantos.org:8910",
@@ -50,6 +52,8 @@ def load_data(symbol):
     df['high']  = dv.get_ts('high', symbol=symbol, start_date=20080101, end_date=20171231)[symbol]
     df['low']   = dv.get_ts('low', symbol=symbol, start_date=20080101, end_date=20171231)[symbol]
 
+    df = df.dropna()
+
     return df
 
 
@@ -81,7 +85,7 @@ def calculator_close(df):
     close_five = df['close'][5:]
     # print(close_five)
     df['close_five_value'] = close_five.reset_index(drop=True)
-    print(df)
+    # print(df)
     df['close_five'] = (df['close_five_value'] - df['close']) / df['close']
     return df
 
@@ -97,7 +101,7 @@ def get_data(symbol=None):
     if not symbol:
         api = DataApi(addr="tcp://data.quantos.org:8910")
         result, msg = api.login("18652420434", "eyJhbGciOiJIUzI1NiJ9.eyJjcmVhdGVfdGltZSI6IjE1MTcwNjAxMDgyOTMiLCJpc3MiOiJhdXRoMCIsImlkIjoiMTg2NTI0MjA0MzQifQ.b1ejSpbEVS7LhbsveZ5kvbWgUs7fnUd0-CBakPwNUu4")
-        print(result)
+        # print(result)
         data, msg = api.query(
                 view="lb.indexCons", 
                 fields="symbol", 
@@ -119,6 +123,7 @@ def get_data(symbol=None):
             df = df[34:]
             df = calculator_close(df)
             save_csv(sym, df)
+            draw_pic(sym)
 
     else:
         df = load_data(symbol)
@@ -132,6 +137,7 @@ def get_data(symbol=None):
         df = df[34:]
         df = calculator_close(df)
         save_csv(symbol, df)
+        draw_pic(symbol)
 
 
 def draw_kdj_pic(symbol, df, sequence):
@@ -153,11 +159,11 @@ def draw_kdj_pic(symbol, df, sequence):
     plt.plot(sig_j.index, sig_j, label='j')
     plt.axis('off')
     # plt.show()
-    print(df['close_five'][4])
+    # print(df['close_five'][4])
     str_symbol = symbol[:-3]
-    if df['close_five'][4] >= 0.05:
+    if df['close_five'][2] >= 0.05:
         fig.savefig('./data/prepared/pic_data/kdj_pic/up/' + str_symbol + '_' + str(sequence), dpi=20)
-    elif df['close_five'][4] <= -0.05:
+    elif df['close_five'][2] <= -0.05:
         fig.savefig('./data/prepared/pic_data/kdj_pic/down/' + str_symbol + '_' + str(sequence), dpi=20)
     else:
         fig.savefig('./data/prepared/pic_data/kdj_pic/equal/' + str_symbol + '_' + str(sequence), dpi=20)
@@ -182,9 +188,9 @@ def create_macd_pic(symbol, df, sequence):
     plt.axis('off')
 
     str_symbol = symbol[:-3]
-    if df['close_five'][4] >= 0.05:
+    if df['close_five'][2] >= 0.05:
         fig.savefig('./data/prepared/pic_data/macd_pic/up/' + str_symbol + '_' + str(sequence), dpi=20)
-    elif df['close_five'][4] <= -0.05:
+    elif df['close_five'][2] <= -0.05:
         fig.savefig('./data/prepared/pic_data/macd_pic/down/' + str_symbol + '_' + str(sequence), dpi=20)
     else:
         fig.savefig('./data/prepared/pic_data/macd_pic/equal/' + str_symbol + '_' + str(sequence), dpi=20)
@@ -195,21 +201,21 @@ def create_macd_pic(symbol, df, sequence):
 
 def draw_pic(symbol, pic_type=None):
     df = pd.read_csv('./data/prepared/datacsv/' + symbol + '.csv', sep=',')
-    df.index = pd.to_datetime(df['trade_date'], format='%Y%m%d')
+    df.index = pd.to_datetime(df['trade_date'], format='%Y/%m/%d')
     # df = df['2017-01-01':'2017-12-31']
     pic_count = 0
-    for i in range(len(df) - 10):
+    for i in range(len(df) - 8):
         if pic_type == 'kdj':
-            pic_res = draw_kdj_pic(symbol, df[0 + i:5 + i], i)  # 画图的
+            pic_res = draw_kdj_pic(symbol, df[0 + i:3 + i], i)  # 画图的
             if pic_res == 1:
                 pic_count += 1
         elif pic_type == 'macd':
-            pic_res = create_macd_pic(symbol, df[0 + i:5 + i], i)  # 画图的
+            pic_res = create_macd_pic(symbol, df[0 + i:3 + i], i)  # 画图的
             if pic_res == 1:
                 pic_count += 1
         else:
-            pic_res_kdj = draw_kdj_pic(symbol, df[0 + i:5 + i], i)
-            pic_res_macd = create_macd_pic(symbol, df[0 + i:5 + i], i)
+            pic_res_kdj = draw_kdj_pic(symbol, df[0 + i:3 + i], i)
+            pic_res_macd = create_macd_pic(symbol, df[0 + i:3 + i], i)
             if pic_res_kdj == 1:
                 pic_count += 1
             if pic_res_macd == 1:
@@ -218,5 +224,55 @@ def draw_pic(symbol, pic_type=None):
     print("stock:" + symbol + ';画图数量：' + str(pic_count))
 
 
-# get_data('600000.SH')
-draw_pic('600000.SH')
+def choice_pics(class_path):
+    class_path_up = class_path + 'up/'
+    class_path_down = class_path + 'down/'
+    class_path_equal = class_path + 'equal/'
+    file_count = 0
+    file_list_up = os.listdir(class_path_up)
+    file_list_down = os.listdir(class_path_down)
+    file_list_equal = os.listdir(class_path_equal)
+    if len(file_list_down) > len(file_list_up):
+        file_count = len(file_list_up)
+    else:
+        file_count = len(file_list_down)
+    print(file_count)
+    file_train_count = int(file_count*0.7)
+    print(file_train_count)
+
+    # 从目录中取一样多个图片
+    file_list_up = sample(file_list_up,file_count)
+    file_list_down = sample(file_list_down,file_count)
+    file_list_equal = sample(file_list_equal,file_count)
+    # 训练图片与测试图片7,3分
+    file_list_up_train = sample(file_list_up,file_train_count)
+    file_list_up_val = list(set(file_list_up) - set(file_list_up_train))
+    file_list_down_train = sample(file_list_down,file_train_count)
+    file_list_down_val = list(set(file_list_down) - set(file_list_down_train))
+    file_list_equal_train = sample(file_list_equal,file_train_count)
+    file_list_equal_val = list(set(file_list_equal) - set(file_list_equal_train))
+
+    for i, img_name in enumerate(file_list_up_train):
+        img_path = class_path_up + img_name
+        copyfile(img_path, './data/train/up/' + img_name)
+    for i, img_name in enumerate(file_list_down_train):
+        img_path = class_path_down + img_name
+        copyfile(img_path, './data/train/down/' + img_name)
+    for i, img_name in enumerate(file_list_equal_train):
+        img_path = class_path_equal + img_name
+        copyfile(img_path, './data/train/equal/' + img_name)
+
+    for i, img_name in enumerate(file_list_up_val):
+        img_path = class_path_up + img_name
+        copyfile(img_path, './data/validation/up/' + img_name)
+    for i, img_name in enumerate(file_list_down_val):
+        img_path = class_path_down + img_name
+        copyfile(img_path, './data/validation/down/' + img_name)
+    for i, img_name in enumerate(file_list_equal_val):
+        img_path = class_path_equal + img_name
+        copyfile(img_path, './data/validation/equal/' + img_name)
+
+
+# get_data()
+# draw_pic()
+choice_pics('./data/prepared/pic_data/macd_pic/')

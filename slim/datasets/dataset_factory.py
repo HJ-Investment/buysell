@@ -19,9 +19,11 @@ from __future__ import division
 from __future__ import print_function
 
 from datasets import macd
+from datasets import kdj
 
 datasets_map = {
     'macd': macd,
+    'kdj': kdj,
 }
 
 
