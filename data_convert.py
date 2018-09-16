@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument('--train-shards', default=2, type=int)
     parser.add_argument('--validation-shards', default=2, type=int)
     parser.add_argument('--num-threads', default=2, type=int)
-    parser.add_argument('--dataset-name', default='kdj', type=str)
+    parser.add_argument('--dataset-name', default='macd_j', type=str)
     return parser.parse_args()
 
 def decodeTFRecords(filename_queue):

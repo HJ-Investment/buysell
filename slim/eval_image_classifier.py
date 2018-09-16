@@ -77,7 +77,7 @@ tf.app.flags.DEFINE_float(
     'If left as None, then moving averages are not used.')
 
 tf.app.flags.DEFINE_integer(
-    'eval_image_size', None, 'Eval image size')
+    'eval_image_size', 256, 'Eval image size')
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -178,23 +178,27 @@ def main(_):
 
     tf.logging.info('Evaluating %s' % checkpoint_path)
 
-    slim.evaluation.evaluate_once(
-        master=FLAGS.master,
-        checkpoint_path=checkpoint_path,
-        logdir=FLAGS.eval_dir,
-        num_evals=num_batches,
-        eval_op=list(names_to_updates.values()),
-        variables_to_restore=variables_to_restore)
-
-    # slim.evaluation.evaluation_loop(
+    # slim.evaluation.evaluate_once(
     #     master=FLAGS.master,
-    #     checkpoint_dir=FLAGS.checkpoint_path,
+    #     checkpoint_path=checkpoint_path,
     #     logdir=FLAGS.eval_dir,
     #     num_evals=num_batches,
     #     eval_op=list(names_to_updates.values()),
-    #     variables_to_restore=variables_to_restore,
-    #     eval_interval_secs=300
-    #     )
+    #     variables_to_restore=variables_to_restore)
+
+
+    gpu_options = tf.GPUOptions(allow_growth=True)
+    session_config = tf.ConfigProto(allow_soft_placement=True, gpu_options=gpu_options)
+    slim.evaluation.evaluation_loop(
+        master=FLAGS.master,
+        checkpoint_dir=FLAGS.checkpoint_path,
+        logdir=FLAGS.eval_dir,
+        num_evals=num_batches,
+        eval_op=list(names_to_updates.values()),
+        variables_to_restore=variables_to_restore,
+        eval_interval_secs=300,
+        session_config=session_config
+        )
 
 
 if __name__ == '__main__':

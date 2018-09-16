@@ -108,22 +108,23 @@ def get_data(symbol=None):
                 filter="index_code=000016.SH&start_date=20180801&end_date=20180831", 
                 data_format='pandas')
         print(msg)
-        symbols = data['symbol'].tolist()
+        # symbols = data['symbol'].tolist()
+        symbols = ['600887.SH', '601988.SH', '600048.SH', '601006.SH', '601398.SH', '601628.SH', '601166.SH', '601318.SH', '601328.SH', '601169.SH', '601088.SH', '601857.SH', '601390.SH', '601601.SH', '601186.SH', '601668.SH', '601766.SH', '600999.SH', '601989.SH', '601688.SH', '601288.SH', '601818.SH', '601800.SH', '601360.SH', '601336.SH', '603993.SH', '601211.SH', '600958.SH', '601878.SH', '601229.SH', '601881.SH']
         print(symbols)
 
         for sym in symbols:
-            df = load_data(sym)
-            close = [float(x) for x in df['close']]
-            # prepare macd data
-            df['MACD'], df['MACDsignal'], df['MACDhist'] = talib.MACD(np.array(close),
-                                                                      fastperiod=12, slowperiod=26, signalperiod=9)
-            df = df.sort_index()
-            df.index = pd.to_datetime(df.index, format='%Y%m%d')
-            df = prepare_kdj(df, 9, 'close')  # 计算好kdj之后从13行开始取数据,计算出来的kdj比较准确
-            df = df[34:]
-            df = calculator_close(df)
-            save_csv(sym, df)
-            draw_pic(sym)
+            # df = load_data(sym)
+            # close = [float(x) for x in df['close']]
+            # # prepare macd data
+            # df['MACD'], df['MACDsignal'], df['MACDhist'] = talib.MACD(np.array(close),
+            #                                                           fastperiod=12, slowperiod=26, signalperiod=9)
+            # df = df.sort_index()
+            # df.index = pd.to_datetime(df.index, format='%Y%m%d')
+            # df = prepare_kdj(df, 9, 'close')  # 计算好kdj之后从13行开始取数据,计算出来的kdj比较准确
+            # df = df[34:]
+            # df = calculator_close(df)
+            # save_csv(sym, df)
+            draw_pic(sym, 'macd_j')
 
     else:
         df = load_data(symbol)
@@ -137,7 +138,7 @@ def get_data(symbol=None):
         df = df[34:]
         df = calculator_close(df)
         save_csv(symbol, df)
-        draw_pic(symbol)
+        draw_pic(symbol, 'macd_j')
 
 
 def draw_kdj_pic(symbol, df, sequence):
@@ -185,7 +186,7 @@ def create_macd_pic(symbol, df, sequence):
     plt.plot(df.index, df['MACD'], label='macd dif')  # 快线
     plt.plot(df.index, df['MACDsignal'], label='signal dea')  # 慢线
     plt.bar(df.index, df['MACDhist']*2, label='hist bar')
-    plt.axis('off')
+    # plt.axis('off')
 
     str_symbol = symbol[:-3]
     if df['close_five'][2] >= 0.05:
@@ -198,11 +199,83 @@ def create_macd_pic(symbol, df, sequence):
 
     return 1
 
+def create_fixed_pic(symbol, df, sequence):
+    if not os.path.exists('./data/prepared/pic_data/fix_pic/up'):
+        os.makedirs('./data/prepared/pic_data/fix_pic/up')
+    if not os.path.exists('./data/prepared/pic_data/fix_pic/equal'):
+        os.makedirs('./data/prepared/pic_data/fix_pic/equal')
+    if not os.path.exists('./data/prepared/pic_data/fix_pic/down'):
+        os.makedirs('./data/prepared/pic_data/fix_pic/down')
+    
+    fig = plt.figure(figsize=(12.8, 12.8))  # 设置图形的大小,figsize=(12.8,12.8) 保存的时候dpi=10可以得到128*128的图片
+    
+    ax1 = fig.add_subplot(111)
+
+    sig_k = df.k
+    sig_d = df.d
+    sig_j = df.k*3 - df.d*2
+    ax1.plot(sig_k.index, sig_k, label='k')
+    ax1.plot(sig_d.index, sig_d, label='d')
+    ax1.plot(sig_j.index, sig_j, label='j')
+    ax1.axis('off')
+
+    ax2 = ax1.twinx()
+    ax2.plot(df.index, df['MACD'], label='macd dif')  # 快线
+    ax2.plot(df.index, df['MACDsignal'], label='signal dea')  # 慢线
+    ax2.axis('off')
+
+    str_symbol = symbol[:-3]
+    if df['close_five'][2] >= 0.05:
+        fig.savefig('./data/prepared/pic_data/fix_pic/up/' + str_symbol + '_' + str(sequence), dpi=20)
+    elif df['close_five'][2] <= -0.05:
+        fig.savefig('./data/prepared/pic_data/fix_pic/down/' + str_symbol + '_' + str(sequence), dpi=20)
+    else:
+        fig.savefig('./data/prepared/pic_data/fix_pic/equal/' + str_symbol + '_' + str(sequence), dpi=20)
+    plt.close()
+
+    return 1
+
+def create_macd_j_pic(symbol, df, sequence):
+    if not os.path.exists('./data/prepared/pic_data/macd_j_pic/up'):
+        os.makedirs('./data/prepared/pic_data/macd_j_pic/up')
+    if not os.path.exists('./data/prepared/pic_data/macd_j_pic/equal'):
+        os.makedirs('./data/prepared/pic_data/macd_j_pic/equal')
+    if not os.path.exists('./data/prepared/pic_data/macd_j_pic/down'):
+        os.makedirs('./data/prepared/pic_data/macd_j_pic/down')
+    fig = plt.figure(figsize=(12.8, 12.8))
+    df.reset_index(drop=True, inplace=True)
+    norm_j = df['norm_j']
+    plt.plot(df.index, norm_j, label='j', linewidth=15)
+    norm_bar = df['norm_bar']
+    barlist=plt.bar(df.index, norm_bar)
+    for i in range(len(df.index)):
+        if norm_bar[i]<=0:
+            barlist[i].set_color('r')
+        else:
+            barlist[i].set_color('y')
+    plt.axis('off')
+    max_j = norm_j.abs().max()
+    max_macd = norm_bar.abs().max()
+    y_max = max(max_j, max_macd)
+    plt.ylim((0-y_max)*1.1, y_max*1.1)
+
+    str_symbol = symbol[:-3]
+    if df['close_five'][2] >= 0.05:
+        fig.savefig('./data/prepared/pic_data/macd_j_pic/up/' + str_symbol + '_' + str(sequence), dpi=20)
+    elif df['close_five'][2] <= -0.05:
+        fig.savefig('./data/prepared/pic_data/macd_j_pic/down/' + str_symbol + '_' + str(sequence), dpi=20)
+    else:
+        fig.savefig('./data/prepared/pic_data/macd_j_pic/equal/' + str_symbol + '_' + str(sequence), dpi=20)
+    plt.close()
+
+    return 1
+
 
 def draw_pic(symbol, pic_type=None):
     df = pd.read_csv('./data/prepared/datacsv/' + symbol + '.csv', sep=',')
     df.index = pd.to_datetime(df['trade_date'], format='%Y/%m/%d')
-    # df = df['2017-01-01':'2017-12-31']
+    # df = df['2017-11-01':'2017-12-31']
+    df.reset_index(drop = True, inplace = True)
     pic_count = 0
     for i in range(len(df) - 8):
         if pic_type == 'kdj':
@@ -211,6 +284,18 @@ def draw_pic(symbol, pic_type=None):
                 pic_count += 1
         elif pic_type == 'macd':
             pic_res = create_macd_pic(symbol, df[0 + i:3 + i], i)  # 画图的
+            if pic_res == 1:
+                pic_count += 1
+        elif pic_type == 'fix':
+            pic_res = create_fixed_pic(symbol, df[0 + i:3 + i], i)
+            if pic_res == 1:
+                pic_count += 1
+        elif pic_type == 'macd_j':
+            j = df['j']
+            df['norm_j'] = j.apply(lambda x: (x - j.mean()) / (j.std()))
+            bar_value = df['MACDhist']*2
+            df['norm_bar'] = bar_value.apply(lambda x: (x - bar_value.mean()) / (bar_value.std()))
+            pic_res = create_macd_j_pic(symbol, df[0 + i:3 + i], i)
             if pic_res == 1:
                 pic_count += 1
         else:
@@ -274,5 +359,5 @@ def choice_pics(class_path):
 
 
 # get_data()
-# draw_pic()
-choice_pics('./data/prepared/pic_data/macd_pic/')
+# draw_pic('600703.SH', 'macd_j')
+choice_pics('./data/prepared/pic_data/macd_j_pic/')

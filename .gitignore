@@ -220,3 +220,5 @@ slim/macd/pretrained/*
 slim/macd/tmp/*
 slim/kdj/pretrained/*
 slim/kdj/tmp/*
+slim/fix/pretrained/*
+slim/fix/tmp/*

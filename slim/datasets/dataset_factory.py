@@ -20,10 +20,12 @@ from __future__ import print_function
 
 from datasets import macd
 from datasets import kdj
+from datasets import fix
 
 datasets_map = {
     'macd': macd,
     'kdj': kdj,
+    'fix': fix,
 }
 
 

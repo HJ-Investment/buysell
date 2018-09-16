@@ -150,7 +150,8 @@ def distorted_bounding_box_crop(image,
 
     # Crop the image to the specified bounding box.
     cropped_image = tf.slice(image, bbox_begin, bbox_size)
-    return cropped_image, distort_bbox
+    # return cropped_image, distort_bbox
+    return image, distort_bbox
 
 
 def preprocess_for_train(image, height, width, bbox,
@@ -182,8 +183,11 @@ def preprocess_for_train(image, height, width, bbox,
     3-D float Tensor of distorted image used for training with range [-1, 1].
   """
   with tf.name_scope(scope, 'distort_image', [image, height, width, bbox]):
-    if bbox is None:
-      bbox = tf.constant([0.0, 0.0, 1.0, 1.0],
+    # if bbox is None:
+    #   bbox = tf.constant([0.0, 0.0, 1.0, 1.0],
+    #                      dtype=tf.float32,
+    #                      shape=[1, 1, 4])
+    bbox = tf.constant([0.0, 0.0, 1.0, 1.0],
                          dtype=tf.float32,
                          shape=[1, 1, 4])
     if image.dtype != tf.float32:
