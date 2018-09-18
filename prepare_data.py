@@ -249,7 +249,7 @@ def create_macd_j_pic(symbol, df, sequence):
     norm_bar = df['norm_bar']
     barlist=plt.bar(df.index, norm_bar)
     for i in range(len(df.index)):
-        if norm_bar[i]<=0:
+        if norm_bar[i] <= 0:
             barlist[i].set_color('r')
         else:
             barlist[i].set_color('y')
