@@ -359,5 +359,5 @@ def choice_pics(class_path):
 
 
 # get_data()
-# draw_pic('600703.SH', 'macd_j')
-choice_pics('./data/prepared/pic_data/macd_j_pic/')
+draw_pic('600703.SH', 'macd_j')
+choice_pics('./data/prepared/pic_data/macd_j_pic2/')

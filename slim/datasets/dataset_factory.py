@@ -21,11 +21,13 @@ from __future__ import print_function
 from datasets import macd
 from datasets import kdj
 from datasets import fix
+from datasets import macd_j
 
 datasets_map = {
     'macd': macd,
     'kdj': kdj,
     'fix': fix,
+    'macd_j': macd_j,
 }
 
 

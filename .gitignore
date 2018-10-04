@@ -222,3 +222,6 @@ slim/kdj/pretrained/*
 slim/kdj/tmp/*
 slim/fix/pretrained/*
 slim/fix/tmp/*
+slim/macd_j/pretrained/*
+slim/macd_j/tmp/*
+*.pb
