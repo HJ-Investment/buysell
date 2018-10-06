@@ -225,3 +225,4 @@ slim/fix/tmp/*
 slim/macd_j/pretrained/*
 slim/macd_j/tmp/*
 *.pb
+output/rnn_50/pic_data/*
