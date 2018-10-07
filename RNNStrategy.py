@@ -54,6 +54,7 @@ class RNNStrategy(EventDrivenStrategy):
 
         # 固定长度的价格序列
         self.price_arr = {}
+        self.holiding_day = {}
 
         # 当前仓位
         self.pos = {}
@@ -80,6 +81,7 @@ class RNNStrategy(EventDrivenStrategy):
         for s in self.symbol:
             self.price_arr[s] = pd.DataFrame(columns=['low', 'high', 'close'])
             self.pos[s] = 0
+            self.holiding_day[s] = 0
 #         self.price_arr = np.zeros(self.window)
         create_graph('F:/Code/buysell/slim/macd_j/frozen_graph.pb')
 
@@ -162,7 +164,7 @@ class RNNStrategy(EventDrivenStrategy):
             # print(self.price_arr[quote.symbol])
             
         self.window_count += 1
-        print(self.window_count)
+        # print(self.window_count)
         if self.window_count <= self.window:
             return
 
@@ -190,7 +192,7 @@ class RNNStrategy(EventDrivenStrategy):
             df['norm_j'] = j.apply(lambda x: (x - j.mean()) / (j.std()))
             bar_value = df['MACDhist']*2
             print(quote.symbol)
-            print(df)
+            # print(df)
             df['norm_bar'] = bar_value.apply(lambda x: (x - bar_value.mean()) / (bar_value.std()))
             pic_path = self.create_macd_j_pic(quote.symbol, df[-3:], self.window_count)
 
@@ -201,7 +203,15 @@ class RNNStrategy(EventDrivenStrategy):
             # if fast_ma > slow_ma:
             #     if self.pos[quote.symbol] == 0:
             #         self.buy(quote, 100)
-
+            if result == 1:
+                if self.pos[quote.symbol] == 0:
+                    self.buy(quote, 100)
+                self.holiding_day[quote.symbol] = 0
+            else:
+                if self.holiding_day[quote.symbol] == 5:
+                    self.sell(quote, self.pos[quote.symbol])
+                else:
+                    self.holiding_day[quote.symbol] = self.holiding_day[quote.symbol] + 1
             # elif fast_ma < slow_ma:
             #     if self.pos[quote.symbol]> 0:
             #         self.sell(quote, self.pos[quote.symbol])
@@ -232,8 +242,6 @@ def run_strategy():
         props = {"symbol": ','.join(symbol_list),
                  "start_date": start_date,
                  "end_date": end_date,
-                 "fast_ma_length": 5,
-                 "slow_ma_length": 15,
                  "bar_type": "1d",  # '1d'
                  "init_balance": 50000}
 
