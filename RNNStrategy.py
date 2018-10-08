@@ -32,7 +32,7 @@ trade_config = {
 }
 
 result_dir_path = './output/rnn_50'
-start_date = 20180401
+start_date = 20180501
 end_date = 20180930
 index = '000016.SH'
 is_backtest = True
@@ -203,14 +203,16 @@ class RNNStrategy(EventDrivenStrategy):
             # if fast_ma > slow_ma:
             #     if self.pos[quote.symbol] == 0:
             #         self.buy(quote, 100)
+            if self.holiding_day[quote.symbol] == 5:
+                    self.sell(quote, self.pos[quote.symbol])
+                    self.holiding_day[quote.symbol] = 0
+
             if result == 1:
                 if self.pos[quote.symbol] == 0:
                     self.buy(quote, 100)
-                self.holiding_day[quote.symbol] = 0
+                self.holiding_day[quote.symbol] = self.holiding_day[quote.symbol] + 1
             else:
-                if self.holiding_day[quote.symbol] == 5:
-                    self.sell(quote, self.pos[quote.symbol])
-                else:
+                if self.pos[quote.symbol] > 0:
                     self.holiding_day[quote.symbol] = self.holiding_day[quote.symbol] + 1
             # elif fast_ma < slow_ma:
             #     if self.pos[quote.symbol]> 0:
