@@ -45,6 +45,7 @@ class RNNStrategy(EventDrivenStrategy):
 
         # 标的
         self.symbol = ''
+        self.balance = ''
         self.benchmark_symbol = ''
         self.quotelist = ''
         
@@ -54,10 +55,12 @@ class RNNStrategy(EventDrivenStrategy):
 
         # 固定长度的价格序列
         self.price_arr = {}
-        self.holiding_day = {}
+        self.holding_day = {}
 
         # 当前仓位
         self.pos = {}
+        self.holding_count = 0
+        self.stock_value = 0
 
         # 下单量乘数
         self.buy_size_unit = 1
@@ -74,6 +77,11 @@ class RNNStrategy(EventDrivenStrategy):
 
         # 初始资金
         self.init_balance = props.get('init_balance')
+        # 最大持仓股票数
+        self.holding_count = props.get('holding_Count')
+        self.balance = self.init_balance
+        # 每支股票购买资金
+        self.stock_value = self.balance / self.holding_count
 
         self.window = 37
         
@@ -81,8 +89,7 @@ class RNNStrategy(EventDrivenStrategy):
         for s in self.symbol:
             self.price_arr[s] = pd.DataFrame(columns=['low', 'high', 'close'])
             self.pos[s] = 0
-            self.holiding_day[s] = 0
-#         self.price_arr = np.zeros(self.window)
+            self.holding_day[s] = 0
         create_graph('F:/Code/buysell/slim/macd_j/frozen_graph.pb')
 
     def create_macd_j_pic(self, symbol, df, sequence):
@@ -110,7 +117,7 @@ class RNNStrategy(EventDrivenStrategy):
 
         return pic_path
 
-    def buy(self, quote, size=1):
+    def buy(self, quote, size):
         """
         这里传入的'quote'可以是:
             - Quote类型 (在实盘/仿真交易和tick级回测中，为tick数据)
@@ -129,13 +136,13 @@ class RNNStrategy(EventDrivenStrategy):
         if (task_id is None) or (task_id == 0):
             print("place_order FAILED! msg = {}".format(msg))
     
-    def sell(self, quote, size=1):
+    def sell(self, quote, size):
         if isinstance(quote, Quote):
             ref_price = (quote.bidprice1 + quote.askprice1) / 2.0
         else:
             ref_price = quote.close
     
-        task_id, msg = self.ctx.trade_api.place_order(quote.symbol, common.ORDER_ACTION.SHORT, ref_price, self.buy_size_unit * size)
+        task_id, msg = self.ctx.trade_api.place_order(quote.symbol, common.ORDER_ACTION.SELL, ref_price, self.buy_size_unit * size)
 
         if (task_id is None) or (task_id == 0):
             print("place_order FAILED! msg = {}".format(msg))
@@ -199,24 +206,21 @@ class RNNStrategy(EventDrivenStrategy):
             result = run_inference_on_image(pic_path)
             print(result)
 
-            # 交易逻辑：当快线向上穿越慢线且当前没有持仓，则买入100股；当快线向下穿越慢线且当前有持仓，则平仓
-            # if fast_ma > slow_ma:
-            #     if self.pos[quote.symbol] == 0:
-            #         self.buy(quote, 100)
-            if self.holiding_day[quote.symbol] == 5:
-                    self.sell(quote, self.pos[quote.symbol])
-                    self.holiding_day[quote.symbol] = 0
+            # 交易逻辑：则买入；，则平仓
+
+            if self.holding_day[quote.symbol] == 5:
+                self.sell(quote, self.pos[quote.symbol])
+                self.holding_day[quote.symbol] = 0
 
             if result == 1:
-                if self.pos[quote.symbol] == 0:
-                    self.buy(quote, 100)
-                self.holiding_day[quote.symbol] = self.holiding_day[quote.symbol] + 1
+                if self.pos[quote.symbol] == 0 and quote.symbol != self.benchmark_symbol:
+                    if self.balance > self.stock_value:
+                        self.buy(quote, np.floor(self.stock_value / quote.close))
+                self.holding_day[quote.symbol] += 1
             else:
                 if self.pos[quote.symbol] > 0:
-                    self.holiding_day[quote.symbol] = self.holiding_day[quote.symbol] + 1
-            # elif fast_ma < slow_ma:
-            #     if self.pos[quote.symbol]> 0:
-            #         self.sell(quote, self.pos[quote.symbol])
+                    self.holding_day[quote.symbol] += 1
+
 
     def on_trade(self, ind):
         """
@@ -226,6 +230,11 @@ class RNNStrategy(EventDrivenStrategy):
         print(ind)
         for s in self.symbol:
             self.pos[s] = self.ctx.pm.get_pos(s)
+
+        if common.ORDER_ACTION.is_positive(ind.entrust_action):
+            self.balance -= ind.fill_price * ind.fill_size * self.multiplier
+        else:
+            self.balance += ind.fill_price * ind.fill_size * self.multiplier
 
 
 def run_strategy():
@@ -242,10 +251,11 @@ def run_strategy():
         # add the benchmark index to the last position of symbol_list
         symbol_list.append(index)
         props = {"symbol": ','.join(symbol_list),
+                 "holding_Count": 15,
                  "start_date": start_date,
                  "end_date": end_date,
                  "bar_type": "1d",  # '1d'
-                 "init_balance": 50000}
+                 "init_balance": 45000}
 
         tapi = BacktestTradeApi()
         ins = EventBacktestInstance()

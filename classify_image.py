@@ -90,14 +90,14 @@ def run_inference_on_image(image):
     node_lookup = NodeLookup(label_path)
 
     top_k = predictions.argsort()[-num_top_predictions:][::-1]
-    high_score = 0
-    high_node_id = 0
+    up_score = predictions[1]
+    notup_score = predictions[0]
     for node_id in top_k:
       human_string = node_lookup.id_to_string(node_id)
       score = predictions[node_id]
-      if score > high_score:
-          high_score = score
-          high_node_id = node_id
       print('%s (score = %.5f)' % (human_string, score))
-    return high_node_id
+    if up_score - notup_score > 0.001:
+      return 1
+    else:
+      return 0
 
