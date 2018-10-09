@@ -32,7 +32,7 @@ trade_config = {
 }
 
 result_dir_path = './output/rnn_50'
-start_date = 20180501
+start_date = 20180401
 end_date = 20180930
 index = '000016.SH'
 is_backtest = True
@@ -131,6 +131,11 @@ class RNNStrategy(EventDrivenStrategy):
             # 否则为bar类型，ref_price为bar的收盘价
             ref_price = quote.close
             
+        print('---------------------------BUY-------------------------------------')
+        print(quote.symbol)
+        print(ref_price)
+        print(size)
+        print('-------------------------------------------------------------------')
         task_id, msg = self.ctx.trade_api.place_order(quote.symbol, common.ORDER_ACTION.BUY, ref_price, self.buy_size_unit * size)
 
         if (task_id is None) or (task_id == 0):
@@ -141,7 +146,12 @@ class RNNStrategy(EventDrivenStrategy):
             ref_price = (quote.bidprice1 + quote.askprice1) / 2.0
         else:
             ref_price = quote.close
-    
+
+        print('---------------------------SELL-------------------------------------')
+        print(quote.symbol)
+        print(ref_price)
+        print(size)
+        print('--------------------------------------------------------------------')
         task_id, msg = self.ctx.trade_api.place_order(quote.symbol, common.ORDER_ACTION.SELL, ref_price, self.buy_size_unit * size)
 
         if (task_id is None) or (task_id == 0):
@@ -210,18 +220,19 @@ class RNNStrategy(EventDrivenStrategy):
 
             # 交易逻辑：最大15支持仓股票，如果买入信号为买入并且还有剩余资金，则买入；持仓5天后，则平仓
 
-            if self.holding_day[quote.symbol] == 5:
+            if self.holding_day[quote.symbol] == 5 and quote.symbol != self.benchmark_symbol:
                 self.sell(quote, self.pos[quote.symbol])
                 self.holding_day[quote.symbol] = 0
 
-            if result == 1:
-                if self.pos[quote.symbol] == 0 and quote.symbol != self.benchmark_symbol:
-                    if self.balance >= self.stock_value:
-                        self.buy(quote, np.floor(self.stock_value / quote.close))
-                self.holding_day[quote.symbol] += 1
-            else:
-                if self.pos[quote.symbol] > 0:
+            if quote.symbol != self.benchmark_symbol:
+                if result == 1:
+                    if self.pos[quote.symbol] == 0 :
+                        if self.balance >= self.stock_value:
+                            self.buy(quote, np.floor(self.stock_value / quote.close))
                     self.holding_day[quote.symbol] += 1
+                else:
+                    if self.pos[quote.symbol] > 0:
+                        self.holding_day[quote.symbol] += 1
 
 
     def on_trade(self, ind):
@@ -234,9 +245,9 @@ class RNNStrategy(EventDrivenStrategy):
             self.pos[s] = self.ctx.pm.get_pos(s)
 
         if common.ORDER_ACTION.is_positive(ind.entrust_action):
-            self.balance -= ind.fill_price * ind.fill_size * self.multiplier
+            self.balance -= ind.fill_price * ind.fill_size
         else:
-            self.balance += ind.fill_price * ind.fill_size * self.multiplier
+            self.balance += ind.fill_price * ind.fill_size
 
 
 def run_strategy():
