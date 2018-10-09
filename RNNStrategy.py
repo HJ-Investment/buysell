@@ -167,7 +167,9 @@ class RNNStrategy(EventDrivenStrategy):
             self.quotelist.append(quote_dic.get(s))
         for quote in self.quotelist:
             # print(quote)
-            self.price_arr[quote.symbol] = self.price_arr[quote.symbol].append({'low': quote.low, 'high': quote.high, 'close': quote.close}, ignore_index=True)
+            self.price_arr[quote.symbol] = self.price_arr[quote.symbol].append({'low': quote.low, 'high': quote.high,
+                                                                                'close': quote.close}, ignore_index=True
+                                                                               )
             # print(self.price_arr[quote.symbol])
             
         self.window_count += 1
@@ -206,7 +208,7 @@ class RNNStrategy(EventDrivenStrategy):
             result = run_inference_on_image(pic_path)
             print(result)
 
-            # 交易逻辑：则买入；，则平仓
+            # 交易逻辑：最大15支持仓股票，如果买入信号为买入并且还有剩余资金，则买入；持仓5天后，则平仓
 
             if self.holding_day[quote.symbol] == 5:
                 self.sell(quote, self.pos[quote.symbol])
@@ -214,7 +216,7 @@ class RNNStrategy(EventDrivenStrategy):
 
             if result == 1:
                 if self.pos[quote.symbol] == 0 and quote.symbol != self.benchmark_symbol:
-                    if self.balance > self.stock_value:
+                    if self.balance >= self.stock_value:
                         self.buy(quote, np.floor(self.stock_value / quote.close))
                 self.holding_day[quote.symbol] += 1
             else:

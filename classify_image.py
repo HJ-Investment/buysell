@@ -96,7 +96,7 @@ def run_inference_on_image(image):
       human_string = node_lookup.id_to_string(node_id)
       score = predictions[node_id]
       print('%s (score = %.5f)' % (human_string, score))
-    if up_score - notup_score > 0.001:
+    if up_score - notup_score > 0.1:
       return 1
     else:
       return 0
