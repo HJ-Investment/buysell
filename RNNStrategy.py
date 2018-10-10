@@ -26,7 +26,7 @@ logger = logging.getLogger('log')
 logger.setLevel(logging.DEBUG)
 
 # 创建一个handler，用于写入日志文件
-fh = logging.FileHandler('./log.log', encoding='UTF-8')
+fh = logging.FileHandler('./buysell.log', encoding='UTF-8')
 fh.setLevel(logging.DEBUG)
 
 # 再创建一个handler，用于输出到控制台
@@ -156,7 +156,7 @@ class RNNStrategy(EventDrivenStrategy):
         logger.info(quote.date)
         logger.info(ref_price)
         logger.info(size)
-        logger.info('-------------------------------------------------------------------')
+        logger.info('-------------------------------------------------------------------\n')
         task_id, msg = self.ctx.trade_api.place_order(quote.symbol,
                                                       common.ORDER_ACTION.BUY,
                                                       ref_price,
@@ -176,7 +176,7 @@ class RNNStrategy(EventDrivenStrategy):
         logger.info(quote.date)
         logger.info(ref_price)
         logger.info(size)
-        logger.info('--------------------------------------------------------------------')
+        logger.info('--------------------------------------------------------------------\n')
         task_id, msg = self.ctx.trade_api.place_order(quote.symbol,
                                                       common.ORDER_ACTION.SELL,
                                                       ref_price,
@@ -240,26 +240,26 @@ class RNNStrategy(EventDrivenStrategy):
             j = df['j']
             df['norm_j'] = j.apply(lambda x: (x - j.mean()) / (j.std()))
             bar_value = df['MACDhist']*2
-            print(quote.symbol)
+            logger.info(quote.symbol)
             # print(df)
             df['norm_bar'] = bar_value.apply(lambda x: (x - bar_value.mean()) / (bar_value.std()))
             pic_path = self.create_macd_j_pic(quote.symbol, df[-3:], self.window_count)
 
             result = run_inference_on_image(pic_path)
-            print(result)
+            logger.info(result)
 
             # 交易逻辑：最大15支持仓股票，如果买入信号为买入并且还有剩余资金，则买入；持仓5天后，则平仓
-
+            logger.info(self.holding_day[quote.symbol])
             if self.holding_day[quote.symbol] == 5 and quote.symbol != self.benchmark_symbol:
                 self.sell(quote, self.pos[quote.symbol])
-                self.holding_day[quote.symbol] = 0
 
             if quote.symbol != self.benchmark_symbol:
                 if result == 1:
                     if self.pos[quote.symbol] == 0:
                         if self.balance >= self.stock_value:
                             self.buy(quote, np.floor(self.stock_value / quote.close))
-                    self.holding_day[quote.symbol] += 1
+                    else:
+                        self.holding_day[quote.symbol] += 1
                 else:
                     if self.pos[quote.symbol] > 0:
                         self.holding_day[quote.symbol] += 1
@@ -275,24 +275,30 @@ class RNNStrategy(EventDrivenStrategy):
         for s in self.symbol:
             self.pos[s] = self.ctx.pm.get_pos(s)
 
-        logger.info('---updated pos----')
+        logger.info('\n---updated pos----\n')
 
         if common.ORDER_ACTION.is_positive(ind.entrust_action):
             self.balance -= ind.fill_price * ind.fill_size
+            self.holding_day[ind.symbol] = 0
         else:
             self.balance += ind.fill_price * ind.fill_size
+            self.holding_day[ind.symbol] += 1
+        
         logger.info(ind.symbol)
         logger.info(self.balance)
+        logger.info('\n')
 
     def on_order_status(self, ind):
         if self.output:
             logger.info("\nStrategy on order status: ")
             logger.info(ind)
+            logger.info('\n')
 
     def on_task_status(self, ind):
         if self.output:
             logger.info("\nStrategy on task ind: ")
             logger.info(ind)
+            logger.info('\n')
 
 
 def run_strategy():
@@ -303,7 +309,8 @@ def run_strategy():
 
         ds = RemoteDataService()
         ds.init_from_config(data_config)
-        symbol_list = ds.query_index_member(index, start_date, start_date)
+        # symbol_list = ds.query_index_member(index, start_date, start_date)
+        symbol_list = ['600887.SH']
         print(symbol_list)
 
         # add the benchmark index to the last position of symbol_list
@@ -313,7 +320,8 @@ def run_strategy():
                  "start_date": start_date,
                  "end_date": end_date,
                  "bar_type": "1d",  # '1d'
-                 "init_balance": 45000}
+                 "init_balance": 45000,
+                 "commission_rate": 2E-4}
 
         tapi = BacktestTradeApi()
         ins = EventBacktestInstance()
