@@ -20,6 +20,26 @@ import jaqs.util as jutil
 
 from classify_image import run_inference_on_image, create_graph
 
+import logging
+
+logger = logging.getLogger('log')
+logger.setLevel(logging.DEBUG)
+
+# 创建一个handler，用于写入日志文件
+fh = logging.FileHandler('./log.log', encoding='UTF-8')
+fh.setLevel(logging.DEBUG)
+
+# 再创建一个handler，用于输出到控制台
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(formatter)
+fh.setFormatter(formatter)
+
+logger.addHandler(fh)
+logger.addHandler(ch)
+
 data_config = {
   "remote.data.address": "tcp://data.quantos.org:8910",
   "remote.data.username": "18652420434",
@@ -130,16 +150,20 @@ class RNNStrategy(EventDrivenStrategy):
         else:
             # 否则为bar类型，ref_price为bar的收盘价
             ref_price = quote.close
-            
-        print('---------------------------BUY-------------------------------------')
-        print(quote.symbol)
-        print(ref_price)
-        print(size)
-        print('-------------------------------------------------------------------')
-        task_id, msg = self.ctx.trade_api.place_order(quote.symbol, common.ORDER_ACTION.BUY, ref_price, self.buy_size_unit * size)
+
+        logger.info('---------------------------BUY-------------------------------------')
+        logger.info(quote.symbol)
+        logger.info(quote.date)
+        logger.info(ref_price)
+        logger.info(size)
+        logger.info('-------------------------------------------------------------------')
+        task_id, msg = self.ctx.trade_api.place_order(quote.symbol,
+                                                      common.ORDER_ACTION.BUY,
+                                                      ref_price,
+                                                      self.buy_size_unit * size)
 
         if (task_id is None) or (task_id == 0):
-            print("place_order FAILED! msg = {}".format(msg))
+            logger.info("place_order FAILED! msg = {}".format(msg))
     
     def sell(self, quote, size):
         if isinstance(quote, Quote):
@@ -147,15 +171,19 @@ class RNNStrategy(EventDrivenStrategy):
         else:
             ref_price = quote.close
 
-        print('---------------------------SELL-------------------------------------')
-        print(quote.symbol)
-        print(ref_price)
-        print(size)
-        print('--------------------------------------------------------------------')
-        task_id, msg = self.ctx.trade_api.place_order(quote.symbol, common.ORDER_ACTION.SELL, ref_price, self.buy_size_unit * size)
+        logger.info('---------------------------SELL-------------------------------------')
+        logger.info(quote.symbol)
+        logger.info(quote.date)
+        logger.info(ref_price)
+        logger.info(size)
+        logger.info('--------------------------------------------------------------------')
+        task_id, msg = self.ctx.trade_api.place_order(quote.symbol,
+                                                      common.ORDER_ACTION.SELL,
+                                                      ref_price,
+                                                      self.buy_size_unit * size)
 
         if (task_id is None) or (task_id == 0):
-            print("place_order FAILED! msg = {}".format(msg))
+            logger.info("place_order FAILED! msg = {}".format(msg))
     
     """
     'on_tick' 接收单个quote变量，而'on_bar'接收多个quote组成的dictionary
@@ -177,8 +205,10 @@ class RNNStrategy(EventDrivenStrategy):
             self.quotelist.append(quote_dic.get(s))
         for quote in self.quotelist:
             # print(quote)
-            self.price_arr[quote.symbol] = self.price_arr[quote.symbol].append({'low': quote.low, 'high': quote.high,
-                                                                                'close': quote.close}, ignore_index=True
+            self.price_arr[quote.symbol] = self.price_arr[quote.symbol].append({'low': quote.low,
+                                                                                'high': quote.high,
+                                                                                'close': quote.close},
+                                                                               ignore_index=True
                                                                                )
             # print(self.price_arr[quote.symbol])
             
@@ -226,7 +256,7 @@ class RNNStrategy(EventDrivenStrategy):
 
             if quote.symbol != self.benchmark_symbol:
                 if result == 1:
-                    if self.pos[quote.symbol] == 0 :
+                    if self.pos[quote.symbol] == 0:
                         if self.balance >= self.stock_value:
                             self.buy(quote, np.floor(self.stock_value / quote.close))
                     self.holding_day[quote.symbol] += 1
@@ -239,15 +269,30 @@ class RNNStrategy(EventDrivenStrategy):
         """
         交易完成后通过self.ctx.pm.get_pos得到最新仓位并更新self.pos
         """
-        print("\nStrategy on trade: ")
-        print(ind)
+        logger.info("\nStrategy on trade: ")
+        logger.info(ind)
+
         for s in self.symbol:
             self.pos[s] = self.ctx.pm.get_pos(s)
+
+        logger.info('---updated pos----')
 
         if common.ORDER_ACTION.is_positive(ind.entrust_action):
             self.balance -= ind.fill_price * ind.fill_size
         else:
             self.balance += ind.fill_price * ind.fill_size
+        logger.info(ind.symbol)
+        logger.info(self.balance)
+
+    def on_order_status(self, ind):
+        if self.output:
+            logger.info("\nStrategy on order status: ")
+            logger.info(ind)
+
+    def on_task_status(self, ind):
+        if self.output:
+            logger.info("\nStrategy on task ind: ")
+            logger.info(ind)
 
 
 def run_strategy():
