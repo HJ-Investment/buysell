@@ -80,6 +80,7 @@ class RNNStrategy(EventDrivenStrategy):
         # 当前仓位
         self.pos = {}
         self.holding_count = 0
+        self.cur_holding_count = 0
         self.stock_value = 0
 
         # 下单量乘数
@@ -164,6 +165,8 @@ class RNNStrategy(EventDrivenStrategy):
 
         if (task_id is None) or (task_id == 0):
             logger.info("place_order FAILED! msg = {}".format(msg))
+        else:
+            self.cur_holding_count += 1
     
     def sell(self, quote, size):
         if isinstance(quote, Quote):
@@ -184,6 +187,8 @@ class RNNStrategy(EventDrivenStrategy):
 
         if (task_id is None) or (task_id == 0):
             logger.info("place_order FAILED! msg = {}".format(msg))
+        else:
+            self.cur_holding_count -= 1
     
     """
     'on_tick' 接收单个quote变量，而'on_bar'接收多个quote组成的dictionary
@@ -217,6 +222,9 @@ class RNNStrategy(EventDrivenStrategy):
         if self.window_count <= self.window:
             return
 
+        stockholdings = self.ctx.pm.holding_securities
+        self.cur_holding_count = len(stockholdings)
+
         # 计算K,D,J,MACDhist
         for quote in self.quotelist:
             df = self.price_arr[quote.symbol]
@@ -248,16 +256,17 @@ class RNNStrategy(EventDrivenStrategy):
             result = run_inference_on_image(pic_path)
             logger.info(result)
 
-            # 交易逻辑：最大15支持仓股票，如果买入信号为买入并且还有剩余资金，则买入；持仓5天后，则平仓
+            # 交易逻辑：最大15支持仓股票，如果买入信号为买入并且还有剩余资金，则买入；持仓第5天平仓
             logger.info(self.holding_day[quote.symbol])
-            if self.holding_day[quote.symbol] == 5 and quote.symbol != self.benchmark_symbol:
+            if self.holding_day[quote.symbol] == 4 and quote.symbol != self.benchmark_symbol:
                 self.sell(quote, self.pos[quote.symbol])
 
             if quote.symbol != self.benchmark_symbol:
                 if result == 1:
-                    if self.pos[quote.symbol] == 0:
-                        if self.balance >= self.stock_value:
-                            self.buy(quote, np.floor(self.stock_value / quote.close))
+                    if self.pos[quote.symbol] == 0 and self.cur_holding_count <= self.holding_count:
+                        hands = np.floor(self.stock_value / quote.close / 100)
+                        if self.balance >= self.stock_value and hands > 0:
+                            self.buy(quote, hands*100)
                     else:
                         self.holding_day[quote.symbol] += 1
                 else:
