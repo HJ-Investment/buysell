@@ -21,6 +21,7 @@ import jaqs.util as jutil
 from classify_image import run_inference_on_image, create_graph
 
 import logging
+from random import sample
 
 logger = logging.getLogger('log')
 logger.setLevel(logging.DEBUG)
@@ -52,7 +53,7 @@ trade_config = {
 }
 
 result_dir_path = './output/rnn_50'
-start_date = 20180401
+start_date = 20180101
 end_date = 20180930
 index = '000016.SH'
 is_backtest = True
@@ -258,12 +259,12 @@ class RNNStrategy(EventDrivenStrategy):
 
             # 交易逻辑：最大15支持仓股票，如果买入信号为买入并且还有剩余资金，则买入；持仓第5天平仓
             logger.info(self.holding_day[quote.symbol])
-            if self.holding_day[quote.symbol] == 4 and quote.symbol != self.benchmark_symbol:
+            if self.holding_day[quote.symbol] >= 4 and quote.symbol != self.benchmark_symbol:
                 self.sell(quote, self.pos[quote.symbol])
 
             if quote.symbol != self.benchmark_symbol:
                 if result == 1:
-                    if self.pos[quote.symbol] == 0 and self.cur_holding_count <= self.holding_count:
+                    if self.pos[quote.symbol] == 0 and self.cur_holding_count < self.holding_count:
                         hands = np.floor(self.stock_value / quote.close / 100)
                         if self.balance >= self.stock_value and hands > 0:
                             self.buy(quote, hands*100)
@@ -288,10 +289,10 @@ class RNNStrategy(EventDrivenStrategy):
 
         if common.ORDER_ACTION.is_positive(ind.entrust_action):
             self.balance -= ind.fill_price * ind.fill_size
-            self.holding_day[ind.symbol] = 0
+            self.holding_day[ind.symbol] += 1
         else:
             self.balance += ind.fill_price * ind.fill_size
-            self.holding_day[ind.symbol] += 1
+            self.holding_day[ind.symbol] = 0
         
         logger.info(ind.symbol)
         logger.info(self.balance)
@@ -318,8 +319,9 @@ def run_strategy():
 
         ds = RemoteDataService()
         ds.init_from_config(data_config)
-        # symbol_list = ds.query_index_member(index, start_date, start_date)
-        symbol_list = ['600887.SH']
+        symbol_list = ds.query_index_member(index, start_date, start_date)
+        # symbol_list = ['600887.SH']
+        # symbol_list = sample(symbol_list, 20)
         print(symbol_list)
 
         # add the benchmark index to the last position of symbol_list
