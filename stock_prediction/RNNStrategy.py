@@ -139,6 +139,38 @@ class RNNStrategy(EventDrivenStrategy):
 
         return pic_path
 
+    def predict(self, quote):
+        df = self.price_arr[quote.symbol]
+        low_list = df['low'].rolling(window=9, center=False).min()  # pd.rolling_min(df['low'], n)
+        low_list.fillna(value=df['low'].expanding(min_periods=1).min(), inplace=True)
+        high_list = df['high'].rolling(window=9, center=False).max()  # pd.rolling_max(df['high'], n)
+        high_list.fillna(value=df['high'].expanding(min_periods=1).max(), inplace=True)
+        rsv = (df['close'] - low_list) / (high_list - low_list) * 100
+
+        df['k'] = pd.ewma(rsv, com=2)
+        df['d'] = pd.ewma(df['k'], com=2)
+        df['j'] = 3.0 * df['k'] - 2.0 * df['d']
+
+        close = [float(x) for x in df['close']]
+        # prepare macd data
+        df['MACD'], df['MACDsignal'], df['MACDhist'] = talib.MACD(np.array(close),
+                                                                fastperiod=12, slowperiod=26, signalperiod=9)
+
+        # 停牌
+        if df.iloc[-3,0] == 0 or df.iloc[-2,0] == 0 or df.iloc[-1,0] == 0:
+            return 0
+        j = df['j']
+        df['norm_j'] = j.apply(lambda x: (x - j.mean()) / (j.std()))
+        bar_value = df['MACDhist']*2
+        logger.info(quote.symbol)
+        # print(df)
+        df['norm_bar'] = bar_value.apply(lambda x: (x - bar_value.mean()) / (bar_value.std()))
+        pic_path = self.create_macd_j_pic(quote.symbol, df[-3:], self.window_count)
+
+        result = run_inference_on_image(pic_path)
+        logger.info(result)
+        return result
+
     def buy(self, quote, size):
         """
         这里传入的'quote'可以是:
@@ -223,56 +255,27 @@ class RNNStrategy(EventDrivenStrategy):
         if self.window_count <= self.window:
             return
 
+
+        # 交易逻辑：最大15支持仓股票，如果买入信号为买入并且还有剩余资金，则买入；持仓第5天平仓
         stockholdings = self.ctx.pm.holding_securities
         self.cur_holding_count = len(stockholdings)
 
-        # 计算K,D,J,MACDhist
-        for quote in self.quotelist:
-            df = self.price_arr[quote.symbol]
-            low_list = df['low'].rolling(window=9, center=False).min()  # pd.rolling_min(df['low'], n)
-            low_list.fillna(value=df['low'].expanding(min_periods=1).min(), inplace=True)
-            high_list = df['high'].rolling(window=9, center=False).max()  # pd.rolling_max(df['high'], n)
-            high_list.fillna(value=df['high'].expanding(min_periods=1).max(), inplace=True)
-            rsv = (df['close'] - low_list) / (high_list - low_list) * 100
+        noholdings = set(self.symbol) - stockholdings
 
-            df['k'] = pd.ewma(rsv, com=2)
-            df['d'] = pd.ewma(df['k'], com=2)
-            df['j'] = 3.0 * df['k'] - 2.0 * df['d']
-
-            close = [float(x) for x in df['close']]
-            # prepare macd data
-            df['MACD'], df['MACDsignal'], df['MACDhist'] = talib.MACD(np.array(close),
-                                                                  fastperiod=12, slowperiod=26, signalperiod=9)
-
-            if df.iloc[-3,0] == 0 or df.iloc[-2,0] == 0 or df.iloc[-1,0] == 0:
-                continue
-            j = df['j']
-            df['norm_j'] = j.apply(lambda x: (x - j.mean()) / (j.std()))
-            bar_value = df['MACDhist']*2
-            logger.info(quote.symbol)
-            # print(df)
-            df['norm_bar'] = bar_value.apply(lambda x: (x - bar_value.mean()) / (bar_value.std()))
-            pic_path = self.create_macd_j_pic(quote.symbol, df[-3:], self.window_count)
-
-            result = run_inference_on_image(pic_path)
-            logger.info(result)
-
-            # 交易逻辑：最大15支持仓股票，如果买入信号为买入并且还有剩余资金，则买入；持仓第5天平仓
-            logger.info(self.holding_day[quote.symbol])
-            if self.holding_day[quote.symbol] >= 4 and quote.symbol != self.benchmark_symbol:
-                self.sell(quote, self.pos[quote.symbol])
-
+        for quote in list(stockholdings):
             if quote.symbol != self.benchmark_symbol:
-                if result == 1:
-                    if self.pos[quote.symbol] == 0 and self.cur_holding_count < self.holding_count:
-                        hands = np.floor(self.stock_value / quote.close / 100)
-                        if self.balance >= self.stock_value and hands > 0:
-                            self.buy(quote, hands*100)
-                    else:
-                        self.holding_day[quote.symbol] += 1
+                if self.holding_day[quote.symbol] >= 4:
+                    self.sell(quote, self.pos[quote.symbol])
                 else:
-                    if self.pos[quote.symbol] > 0:
-                        self.holding_day[quote.symbol] += 1
+                    self.holding_day[quote.symbol] += 1
+
+        for quote in list(noholdings):
+            result = self.predict(quote)
+            if result == 1:
+                if self.pos[quote.symbol] == 0 and self.cur_holding_count < self.holding_count:
+                    hands = np.floor(self.stock_value / quote.close / 100)
+                    if self.balance >= self.stock_value and hands > 0:
+                        self.buy(quote, hands*100)
 
 
     def on_trade(self, ind):
@@ -362,10 +365,10 @@ def run_strategy():
     if not is_backtest:
         ds.subscribe(props['symbol'])
 
-    ins.run()
-    if not is_backtest:
-        time.sleep(9999)
-    ins.save_results(folder_path=result_dir_path)
+    # ins.run()
+    # if not is_backtest:
+    #     time.sleep(9999)
+    # ins.save_results(folder_path=result_dir_path)
     
     ta = ana.EventAnalyzer()
     
@@ -376,7 +379,11 @@ def run_strategy():
     df_bench, _ = ds.daily(index, start_date=start_date, end_date=end_date)
     ta.data_benchmark = df_bench.set_index('trade_date').loc[:, ['close']]
 
-    ta.do_analyze(result_dir=result_dir_path, selected_sec=props['symbol'].split(',')[:-1])
+    temp = pd.read_csv(result_dir_path +'/trades.csv')
+    symbols = set(temp['symbol'].unique())
+    print(symbols)
+
+    ta.do_analyze(result_dir=result_dir_path, selected_sec=list(symbols))
 
 
 if __name__ == "__main__":
