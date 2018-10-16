@@ -5,6 +5,7 @@ import os
 from random import sample
 from shutil import copyfile
 
+
 def create_macd_j_pic(symbol, df, sequence):
     import os
     import matplotlib
@@ -13,6 +14,8 @@ def create_macd_j_pic(symbol, df, sequence):
 
     if not os.path.exists('./data/prepared/pic_data/macd_j_pic2/up'):
         os.makedirs('./data/prepared/pic_data/macd_j_pic2/up')
+    if not os.path.exists('./data/prepared/pic_data/macd_j_pic2/down'):
+        os.makedirs('./data/prepared/pic_data/macd_j_pic2/down')
     if not os.path.exists('./data/prepared/pic_data/macd_j_pic2/notup'):
         os.makedirs('./data/prepared/pic_data/macd_j_pic2/notup')
 
@@ -32,6 +35,8 @@ def create_macd_j_pic(symbol, df, sequence):
     str_symbol = symbol[:-3]
     if df['close_five'][2] >= 0.05:
         fig.savefig('./data/prepared/pic_data/macd_j_pic2/up/' + str_symbol + '_' + str(sequence), dpi=20)
+    elif df['close_five'][2] <= -0.05:
+        fig.savefig('./data/prepared/pic_data/macd_j_pic2/down/' + str_symbol + '_' + str(sequence), dpi=20)
     else:
         fig.savefig('./data/prepared/pic_data/macd_j_pic2/notup/' + str_symbol + '_' + str(sequence), dpi=20)
 
@@ -39,31 +44,47 @@ def create_macd_j_pic(symbol, df, sequence):
 
     print(sequence)
 
+
 def choice_pics(class_path):
     class_path_up = class_path + 'up/'
+    class_path_down = class_path + 'down/'
     class_path_notup = class_path + 'notup/'
+
     file_count = 0
+
     file_list_up = os.listdir(class_path_up)
+    file_list_down = os.listdir(class_path_down)
     file_list_notup = os.listdir(class_path_notup)
 
-    file_count = len(file_list_up)
+    file_up_count = len(file_list_up)
+    file_down_count = len(file_list_down)
+    if file_down_count <= file_up_count:
+        file_count = file_down_count
+    else:
+        file_count = file_up_count
     print(file_count)
 
     file_train_count = int(file_count*0.7)
     print(file_train_count)
 
     # 从目录中取一样多个图片
-    file_list_up = sample(file_list_up,file_count)
-    file_list_notup = sample(file_list_notup,file_count)
+    file_list_up = sample(file_list_up, file_count)
+    file_list_down = sample(file_list_down, file_count)
+    file_list_notup = sample(file_list_notup, file_count)
     # 训练图片与测试图片7,3分
     file_list_up_train = sample(file_list_up,file_train_count)
     file_list_up_val = list(set(file_list_up) - set(file_list_up_train))
+    file_list_down_train = sample(file_list_down, file_train_count)
+    file_list_down_val = list(set(file_list_down) - set(file_list_down_train))
     file_list_notup_train = sample(file_list_notup,file_train_count)
     file_list_notup_val = list(set(file_list_notup) - set(file_list_notup_train))
 
     for i, img_name in enumerate(file_list_up_train):
         img_path = class_path_up + img_name
         copyfile(img_path, './data/train/up/' + img_name)
+    for i, img_name in enumerate(file_list_down_train):
+        img_path = class_path_down + img_name
+        copyfile(img_path, './data/train/down/' + img_name)
     for i, img_name in enumerate(file_list_notup_train):
         img_path = class_path_notup + img_name
         copyfile(img_path, './data/train/notup/' + img_name)
@@ -71,9 +92,13 @@ def choice_pics(class_path):
     for i, img_name in enumerate(file_list_up_val):
         img_path = class_path_up + img_name
         copyfile(img_path, './data/validation/up/' + img_name)
+    for i, img_name in enumerate(file_list_down_val):
+        img_path = class_path_down + img_name
+        copyfile(img_path, './data/validation/down/' + img_name)
     for i, img_name in enumerate(file_list_notup_val):
         img_path = class_path_notup + img_name
         copyfile(img_path, './data/validation/notup/' + img_name)
+
 
 if __name__ == '__main__':
     # multiprocessing.freeze_support()
@@ -90,7 +115,6 @@ if __name__ == '__main__':
     # print(msg)
     # symbols = data['symbol'].tolist()
     # print(symbols)
-
 
     # for sym in symbols:
     #     df = pd.read_csv('./data/prepared/datacsv/' + sym + '.csv', sep=',')
