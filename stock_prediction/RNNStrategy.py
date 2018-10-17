@@ -53,7 +53,7 @@ trade_config = {
 }
 
 result_dir_path = './output/rnn_50'
-start_date = 20180101
+start_date = 20160601
 end_date = 20180930
 index = '000016.SH'
 is_backtest = True
@@ -102,7 +102,7 @@ class RNNStrategy(EventDrivenStrategy):
         # 最大持仓股票数
         self.holding_count = props.get('holding_Count')
         self.balance = self.init_balance
-        # 每支股票购买资金
+        # 初始每支股票购买资金
         self.stock_value = self.balance / self.holding_count
 
         self.window = 37
@@ -140,6 +140,8 @@ class RNNStrategy(EventDrivenStrategy):
         return pic_path
 
     def predict(self, quote):
+        logger.info('---------------------------PREDICT---------------------------------')
+        logger.info(quote.symbol)
         df = self.price_arr[quote.symbol]
         low_list = df['low'].rolling(window=9, center=False).min()  # pd.rolling_min(df['low'], n)
         low_list.fillna(value=df['low'].expanding(min_periods=1).min(), inplace=True)
@@ -156,19 +158,24 @@ class RNNStrategy(EventDrivenStrategy):
         df['MACD'], df['MACDsignal'], df['MACDhist'] = talib.MACD(np.array(close),
                                                                 fastperiod=12, slowperiod=26, signalperiod=9)
 
+        
+        #上新
+        if len(df.index) < 42:
+            return
         # 停牌
         if df.iloc[-3,0] == 0 or df.iloc[-2,0] == 0 or df.iloc[-1,0] == 0:
             return 0
         j = df['j']
         df['norm_j'] = j.apply(lambda x: (x - j.mean()) / (j.std()))
         bar_value = df['MACDhist']*2
-        logger.info(quote.symbol)
+        
         # print(df)
         df['norm_bar'] = bar_value.apply(lambda x: (x - bar_value.mean()) / (bar_value.std()))
         pic_path = self.create_macd_j_pic(quote.symbol, df[-3:], self.window_count)
 
         result = run_inference_on_image(pic_path)
         logger.info(result)
+        logger.info('-------------------------------------------------------------------\n')
         return result
 
     def buy(self, quote, size):
@@ -220,8 +227,7 @@ class RNNStrategy(EventDrivenStrategy):
 
         if (task_id is None) or (task_id == 0):
             logger.info("place_order FAILED! msg = {}".format(msg))
-        else:
-            self.cur_holding_count -= 1
+
     
     """
     'on_tick' 接收单个quote变量，而'on_bar'接收多个quote组成的dictionary
@@ -243,7 +249,8 @@ class RNNStrategy(EventDrivenStrategy):
             self.quotelist.append(quote_dic.get(s))
         for quote in self.quotelist:
             # print(quote)
-            self.price_arr[quote.symbol] = self.price_arr[quote.symbol].append({'low': quote.low,
+            if quote is not None:
+                self.price_arr[quote.symbol] = self.price_arr[quote.symbol].append({'low': quote.low,
                                                                                 'high': quote.high,
                                                                                 'close': quote.close},
                                                                                ignore_index=True
@@ -262,20 +269,36 @@ class RNNStrategy(EventDrivenStrategy):
 
         noholdings = set(self.symbol) - stockholdings
 
-        for quote in list(stockholdings):
-            if quote.symbol != self.benchmark_symbol:
-                if self.holding_day[quote.symbol] >= 4:
-                    self.sell(quote, self.pos[quote.symbol])
-                else:
-                    self.holding_day[quote.symbol] += 1
+        logger.info('---------------------------HOLDING-----------------------------------')
+        logger.info(len(stockholdings))
+        logger.info(self.balance)
+        logger.info('--------------------------------------------------------------------\n')
 
-        for quote in list(noholdings):
-            result = self.predict(quote)
-            if result == 1:
-                if self.pos[quote.symbol] == 0 and self.cur_holding_count < self.holding_count:
-                    hands = np.floor(self.stock_value / quote.close / 100)
-                    if self.balance >= self.stock_value and hands > 0:
-                        self.buy(quote, hands*100)
+        for stock in list(stockholdings):
+            quote = quote_dic.get(stock)
+            if stock != self.benchmark_symbol:
+                if self.holding_day[stock] >= 4:
+                    self.sell(quote, self.pos[stock])
+                else:
+                    self.holding_day[stock] += 1
+
+        # 如果上次持仓满15支，下一日只卖不买，直接跳过，如果不满15支，stock金额为剩余balance/空仓仓位
+        if self.cur_holding_count < self.holding_count:
+            self.stock_value = self.balance / (15-self.cur_holding_count) 
+            for stock in list(noholdings):
+                # 已经满仓，停止购买
+                if self.cur_holding_count >= self.holding_count:
+                    return
+                else:
+                    quote = quote_dic.get(stock)
+                    # 遇到还没有上市的股票，跳过
+                    if quote is not None:
+                        result = self.predict(quote)
+                        if result == 1:
+                            if self.pos[stock] == 0:
+                                hands = np.floor(self.stock_value / quote.close / 100)
+                                if self.balance >= self.stock_value and hands > 0:
+                                    self.buy(quote, hands*100)
 
 
     def on_trade(self, ind):
@@ -322,7 +345,7 @@ def run_strategy():
 
         ds = RemoteDataService()
         ds.init_from_config(data_config)
-        symbol_list = ds.query_index_member(index, start_date, start_date)
+        symbol_list = ds.query_index_member(index, start_date, end_date)
         # symbol_list = ['600887.SH']
         # symbol_list = sample(symbol_list, 20)
         print(symbol_list)
@@ -334,7 +357,7 @@ def run_strategy():
                  "start_date": start_date,
                  "end_date": end_date,
                  "bar_type": "1d",  # '1d'
-                 "init_balance": 45000,
+                 "init_balance": 300000,
                  "commission_rate": 2E-4}
 
         tapi = BacktestTradeApi()
@@ -365,10 +388,10 @@ def run_strategy():
     if not is_backtest:
         ds.subscribe(props['symbol'])
 
-    # ins.run()
-    # if not is_backtest:
-    #     time.sleep(9999)
-    # ins.save_results(folder_path=result_dir_path)
+    ins.run()
+    if not is_backtest:
+        time.sleep(9999)
+    ins.save_results(folder_path=result_dir_path)
     
     ta = ana.EventAnalyzer()
     
