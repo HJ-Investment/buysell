@@ -21,7 +21,7 @@ import numpy
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 import input_data
-import c3d_model
+import c3d
 import math
 import numpy as np
 
@@ -50,10 +50,10 @@ def placeholder_inputs(batch_size):
     # image and label tensors, except the first dimension is now batch_size
     # rather than the full size of the train or test data sets.
     images_placeholder = tf.placeholder(tf.float32, shape=(batch_size,
-                                                           c3d_model.NUM_FRAMES_PER_CLIP,
-                                                           c3d_model.CROP_SIZE,
-                                                           c3d_model.CROP_SIZE,
-                                                           c3d_model.CHANNELS))
+                                                           c3d.NUM_FRAMES_PER_CLIP,
+                                                           c3d.CROP_SIZE,
+                                                           c3d.CROP_SIZE,
+                                                           c3d.CHANNELS))
     labels_placeholder = tf.placeholder(tf.int64, shape=(batch_size))
     return images_placeholder, labels_placeholder
 
@@ -147,7 +147,7 @@ def run_training():
                 'wc5b': _variable_with_weight_decay('wc5b', [3, 3, 3, 512, 512], 0.0005),
                 'wd1': _variable_with_weight_decay('wd1', [8192, 4096], 0.0005),
                 'wd2': _variable_with_weight_decay('wd2', [4096, 4096], 0.0005),
-                'out': _variable_with_weight_decay('wout', [4096, c3d_model.NUM_CLASSES], 0.0005)
+                'out': _variable_with_weight_decay('wout', [4096, c3d.NUM_CLASSES], 0.0005)
             }
             biases = {
                 'bc1': _variable_with_weight_decay('bc1', [64], 0.000),
@@ -160,13 +160,13 @@ def run_training():
                 'bc5b': _variable_with_weight_decay('bc5b', [512], 0.000),
                 'bd1': _variable_with_weight_decay('bd1', [4096], 0.000),
                 'bd2': _variable_with_weight_decay('bd2', [4096], 0.000),
-                'out': _variable_with_weight_decay('bout', [c3d_model.NUM_CLASSES], 0.000),
+                'out': _variable_with_weight_decay('bout', [c3d.NUM_CLASSES], 0.000),
             }
         for gpu_index in range(0, gpu_num):
             with tf.device('/gpu:%d' % gpu_index):
                 varlist2 = [weights['out'], biases['out']]
                 varlist1 = list(set(weights.values() + biases.values()) - set(varlist2))
-                logit = c3d_model.inference_c3d(
+                logit = c3d.inference_c3d(
                     images_placeholder[gpu_index * FLAGS.batch_size:(gpu_index + 1) * FLAGS.batch_size, :, :, :, :],
                     0.5,
                     FLAGS.batch_size,
@@ -217,8 +217,8 @@ def run_training():
             train_images, train_labels, _, _, _ = input_data.read_clip_and_label(
                 filename='list/train.list',
                 batch_size=FLAGS.batch_size * gpu_num,
-                num_frames_per_clip=c3d_model.NUM_FRAMES_PER_CLIP,
-                crop_size=c3d_model.CROP_SIZE,
+                num_frames_per_clip=c3d.NUM_FRAMES_PER_CLIP,
+                crop_size=c3d.CROP_SIZE,
                 shuffle=True
             )
             sess.run(train_op, feed_dict={
@@ -243,8 +243,8 @@ def run_training():
                 val_images, val_labels, _, _, _ = input_data.read_clip_and_label(
                     filename='list/test.list',
                     batch_size=FLAGS.batch_size * gpu_num,
-                    num_frames_per_clip=c3d_model.NUM_FRAMES_PER_CLIP,
-                    crop_size=c3d_model.CROP_SIZE,
+                    num_frames_per_clip=c3d.NUM_FRAMES_PER_CLIP,
+                    crop_size=c3d.CROP_SIZE,
                     shuffle=True
                 )
                 summary, acc = sess.run(
