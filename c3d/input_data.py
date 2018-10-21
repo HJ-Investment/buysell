@@ -52,12 +52,12 @@ def read_clip_and_label(filename, batch_size, start_pos=-1, num_frames_per_clip=
   batch_index = 0
   next_batch_start = -1
   lines = list(lines)
-  np_mean = np.load('crop_mean.npy').reshape([num_frames_per_clip, crop_size, crop_size, 3])
+  np_mean = np.load('F:/Code/buysell/c3d/crop_mean.npy').reshape([num_frames_per_clip, crop_size, crop_size, 3])
   # Forcing shuffle, if start_pos is not specified
   if start_pos < 0:
     shuffle = True
   if shuffle:
-    video_indices = range(len(lines))
+    video_indices = list(range(len(lines)))
     random.seed(time.time())
     random.shuffle(video_indices)
   else:

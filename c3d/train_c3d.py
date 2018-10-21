@@ -33,7 +33,7 @@ flags.DEFINE_integer('max_steps', 5000, 'Number of steps to run trainer.')
 flags.DEFINE_integer('batch_size', 10, 'Batch size.')
 FLAGS = flags.FLAGS
 MOVING_AVERAGE_DECAY = 0.9999
-model_save_dir = './models'
+model_save_dir = '.F:/Code/buysell/c3d/models'
 
 
 def placeholder_inputs(batch_size):
@@ -165,7 +165,9 @@ def run_training():
         for gpu_index in range(0, gpu_num):
             with tf.device('/gpu:%d' % gpu_index):
                 varlist2 = [weights['out'], biases['out']]
-                varlist1 = list(set(weights.values() + biases.values()) - set(varlist2))
+                print(varlist2)
+                # varlist1 = list( set(weights.values() + biases.values()) - set(varlist2) )
+                varlist1 = list(set(list(weights.values()) + list(biases.values())) - set(varlist2) )
                 logit = c3d.inference_c3d(
                     images_placeholder[gpu_index * FLAGS.batch_size:(gpu_index + 1) * FLAGS.batch_size, :, :, :, :],
                     0.5,
@@ -197,7 +199,7 @@ def run_training():
         null_op = tf.no_op()
 
         # Create a saver for writing training checkpoints.
-        saver = tf.train.Saver(weights.values() + biases.values())
+        saver = tf.train.Saver(list(weights.values()) + list(biases.values()))
         init = tf.global_variables_initializer()
 
         # Create a session for running Ops on the Graph.
@@ -210,12 +212,12 @@ def run_training():
 
         # Create summary writter
         merged = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter('./visual_logs/train', sess.graph)
-        test_writer = tf.summary.FileWriter('./visual_logs/test', sess.graph)
+        train_writer = tf.summary.FileWriter('F:/Code/buysell/c3d/visual_logs/train', sess.graph)
+        test_writer = tf.summary.FileWriter('F:/Code/buysell/c3d/visual_logs/test', sess.graph)
         for step in xrange(FLAGS.max_steps):
             start_time = time.time()
             train_images, train_labels, _, _, _ = input_data.read_clip_and_label(
-                filename='list/train.list',
+                filename='F:/Code/buysell/c3d/list/train.list',
                 batch_size=FLAGS.batch_size * gpu_num,
                 num_frames_per_clip=c3d.NUM_FRAMES_PER_CLIP,
                 crop_size=c3d.CROP_SIZE,
@@ -229,7 +231,7 @@ def run_training():
             print('Step %d: %.3f sec' % (step, duration))
 
             # Save a checkpoint and evaluate the model periodically.
-            if (step) % 10 == 0 or (step + 1) == FLAGS.max_steps:
+            if (step) % 100 == 0 or (step + 1) == FLAGS.max_steps:
                 saver.save(sess, os.path.join(model_save_dir, 'c3d_ucf_model'), global_step=step)
                 print('Training Data Eval:')
                 summary, acc = sess.run(
@@ -241,7 +243,7 @@ def run_training():
                 train_writer.add_summary(summary, step)
                 print('Validation Data Eval:')
                 val_images, val_labels, _, _, _ = input_data.read_clip_and_label(
-                    filename='list/test.list',
+                    filename='F:/Code/buysell/c3d/list/test.list',
                     batch_size=FLAGS.batch_size * gpu_num,
                     num_frames_per_clip=c3d.NUM_FRAMES_PER_CLIP,
                     crop_size=c3d.CROP_SIZE,
