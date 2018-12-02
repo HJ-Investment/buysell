@@ -1,0 +1,1 @@
+ C:/Users/VIP/AppData/Local/conda/conda/envs/TensorFlow/python.exe .\freeze_graph.py --input_graph F:\Code\buysell\kaggle\output\train\vgg_model.pb --input_checkpoint F:\Code\buysell\kaggle\output\train\model.ckpt-2999 --input_binary true --output_graph F:\Code\buysell\kaggle\output\train\vgg_model_frozen.pb --output_node_names VGG16/fc8/fc8

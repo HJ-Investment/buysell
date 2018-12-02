@@ -55,6 +55,7 @@ def get(df, batch_size):
     imgs = df
     dataset = tf.data.Dataset.from_tensor_slices((labels, imgs))
     dataset = dataset.map(_parse_function)
+    dataset = dataset.repeat(10)
     dataset = dataset.batch(batch_size)
 
     iterator = dataset.make_one_shot_iterator()

@@ -14,7 +14,7 @@ IMG_H = 28
 N_CLASSES = 10
 BATCH_SIZE = 32
 learning_rate = 0.01
-MAX_STEP = 10000 
+MAX_STEP = 3000 
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -152,6 +152,8 @@ def train():
         print('Done training -- epoch limit reached')
     finally:
         coord.request_stop()
+
+    tf.train.write_graph(sess.graph_def, FLAGS.train_log_dir, "vgg_model.pb", as_text=False)
 
     coord.join(threads)
     sess.close()
