@@ -14,7 +14,7 @@ IMG_H = 28
 N_CLASSES = 10
 BATCH_SIZE = 32
 learning_rate = 0.01
-MAX_STEP = 3000 
+MAX_STEP = 2000 
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -87,10 +87,13 @@ def train():
     train_batch = input_data.get(train_df, BATCH_SIZE)
     val_batch = input_data.get(val_df, BATCH_SIZE)
 
-    x = tf.placeholder(tf.float32, shape=[BATCH_SIZE, IMG_W, IMG_H, 1])
-    y_ = tf.placeholder(tf.int64, shape=[BATCH_SIZE])
+    x = tf.placeholder(tf.float32, shape=[BATCH_SIZE, IMG_W, IMG_H, 1], name='x')
+    y_ = tf.placeholder(tf.int64, shape=[BATCH_SIZE], name='y_')
 
     logits = VGG.VGG16N(x, N_CLASSES)
+    #(小处理)将logits乘以1赋值给logits_eval，定义name，方便在后续调用模型时通过tensor名字调用输出tensor
+    b = tf.constant(value=1,dtype=tf.float32)
+    logits_eval = tf.multiply(logits,b,name='logits_eval') 
 
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=y_, name='cross-entropy')
     loss = tf.reduce_mean(cross_entropy, name='loss')

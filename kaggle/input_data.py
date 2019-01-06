@@ -62,6 +62,19 @@ def get(df, batch_size):
     label, image = iterator.get_next()
     return image, label
 
+def val(df, batch_size):
+    def _parse_function(img):
+        image_raw = tf.reshape(img, [28, 28, 1])
+        return image_raw
+
+    dataset = tf.data.Dataset.from_tensor_slices(df)
+    dataset = dataset.map(_parse_function)
+    dataset = dataset.batch(batch_size)
+
+    iterator = dataset.make_one_shot_iterator()
+    image = iterator.get_next()
+    return image
+
 
 # with tf.Session() as sess:
 #     sess.run(tf.global_variables_initializer())
@@ -82,3 +95,8 @@ def get(df, batch_size):
 #         # np.savetxt("prediction" + str(i) + ".csv", img, delimiter=",")
 #         # print(label)
 
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    df = pd.read_csv('./kaggle/test.csv', sep=',')
+    image_raw = sess.run(tf.reshape(df[5:6], [28, 28]))
+    np.savetxt("prediction.csv", image_raw, delimiter=",")
