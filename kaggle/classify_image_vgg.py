@@ -55,18 +55,25 @@ def restore_model_ckpt():
     test_batch = input_data.val(df, 32)
 
     with tf.Session() as sess:
-      saver.restore(sess, tf.train.latest_checkpoint(ckpt_file_path))  # 只需要指定目录就可以恢复所有变量信息
-      graph = tf.get_default_graph()
-      for step in np.arange(len(df.index)/32):   
-          test_images = sess.run(test_batch)
-          x = graph.get_tensor_by_name("x:0")
-          softmax_tensor = graph.get_tensor_by_name('logits_eval:0')
-          predictions = sess.run(softmax_tensor,
+        saver.restore(sess, tf.train.latest_checkpoint(ckpt_file_path))  # 只需要指定目录就可以恢复所有变量信息
+        graph = tf.get_default_graph()
+        x = graph.get_tensor_by_name("x:0")
+        softmax_tensor = graph.get_tensor_by_name('logits_eval:0')
+        all_predictions = []
+        for step in np.arange(len(df.index)/32):
+            test_images = sess.run(test_batch)
+
+            predictions = sess.run(softmax_tensor,
                               {x: test_images})
-          #打印出预测矩阵
-          # print(predictions)
-          #打印出预测矩阵每一行最大值的索引
-          print(tf.argmax(predictions,1).eval())
+            #打印出预测矩阵
+            # print(predictions)
+            #打印出预测矩阵每一行最大值的索引
+            value = tf.argmax(predictions,1).eval()
+            print(value)
+            all_predictions.append(value.tolist())
+            del value
+        datas = pd.DataFrame(all_predictions)
+        print(datas)
 
 def main(_):
   restore_model_ckpt()
