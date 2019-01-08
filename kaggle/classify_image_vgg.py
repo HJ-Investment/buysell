@@ -68,12 +68,18 @@ def restore_model_ckpt():
             #打印出预测矩阵
             # print(predictions)
             #打印出预测矩阵每一行最大值的索引
-            value = tf.argmax(predictions,1).eval()
-            print(value)
-            all_predictions.append(value.tolist())
-            del value
+            for p in predictions:
+                # print(p)
+                l = p.tolist()
+                m = l.index(max(l))
+                # print(m)
+                all_predictions.append(m)
+            # value = tf.argmax(predictions,1).eval()
+            # print(value)
+            # all_predictions.append(value.tolist())
+            # del value
         datas = pd.DataFrame(all_predictions)
-        print(datas)
+        datas.to_csv("./kaggle/predictions.csv")
 
 def main(_):
   restore_model_ckpt()
