@@ -14,7 +14,7 @@ IMG_H = 28
 N_CLASSES = 10
 BATCH_SIZE = 32
 learning_rate = 0.01
-MAX_STEP = 2000 
+MAX_STEP = 10000 
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -147,7 +147,7 @@ def train():
                 summary_str = sess.run(summary_op, feed_dict={x: val_images, y_: val_labels})
                 val_summary_writer.add_summary(summary_str, step)
 
-            if step % 2000 == 0 or (step + 1) == MAX_STEP:
+            if step % 1000 == 0 or (step + 1) == MAX_STEP:
                 checkpoint_path = os.path.join(FLAGS.train_log_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_path, global_step=step)
 
@@ -156,7 +156,7 @@ def train():
     finally:
         coord.request_stop()
 
-    tf.train.write_graph(sess.graph_def, FLAGS.train_log_dir, "vgg_model.pb", as_text=False)
+    # tf.train.write_graph(sess.graph_def, FLAGS.train_log_dir, "vgg_model.pb", as_text=False)
 
     coord.join(threads)
     sess.close()

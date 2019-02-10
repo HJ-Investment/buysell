@@ -50,7 +50,7 @@ def run_inference_on_image():
 
 def restore_model_ckpt():
     ckpt_file_path = 'F:\\Code\\buysell\\kaggle\\output\\train\\'
-    saver = tf.train.import_meta_graph(ckpt_file_path + 'model.ckpt-1999.meta')  # 加载模型结构
+    saver = tf.train.import_meta_graph(ckpt_file_path + 'model.ckpt-9000.meta')  # 加载模型结构
     df = pd.read_csv('./kaggle/test.csv', sep=',')
     test_batch = input_data.val(df, 32)
 
@@ -79,7 +79,7 @@ def restore_model_ckpt():
             # all_predictions.append(value.tolist())
             # del value
         datas = pd.DataFrame(all_predictions)
-        datas.to_csv("./kaggle/predictions.csv")
+        datas.to_csv("F:\\Code\\buysell\\kaggle\\predictions.csv")
 
 def main(_):
   restore_model_ckpt()
