@@ -753,12 +753,29 @@ def obv(data):
 def sar(data, n=4):
     raise Exception("Not implemented yet")
 
+def plot_one(data, func_name='kdj'):
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    import numpy as np
+    rcParams['figure.figsize'] = (18, 50)
+
+    K, D, J = kdj(data)
+    plt.plot(data["date"], K, label="K")
+    plt.plot(data["date"], D, label="D")
+    plt.plot(data["date"], J, label="J")
+    plt.title("KDJ")
+    plt.xlabel('date')
+    plt.ylabel('value')
+    plt.legend()
+    plt.xticks(rotation=90)
+
+    plt.show()
 
 def plot_all(data, is_show=True, output=None):
     import matplotlib.pyplot as plt
     from pylab import rcParams
     import numpy as np
-    rcParams['figure.figsize'] = 18, 50
+    rcParams['figure.figsize'] = (18, 50)
 
     plt.figure()
     # 收盘价

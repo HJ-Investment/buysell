@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from random import sample
 from shutil import copyfile
 
+import trendline
+
 data_config = {
   "remote.data.address": "tcp://data.quantos.org:8910",
   "remote.data.username": "18652420434",
@@ -26,10 +28,10 @@ dataview_store_folder = './read_picture/data/prepared'
 
 
 def download_data():
-    dataview_props = {'start_date': 20080101, 'end_date': 20081231,
+    dataview_props = {'start_date': 20080101, 'end_date': 20091231,
                     #   'universe': '000905.SH',
                       'symbol':'600030.SH',
-                      'fields': 'open,close,high,low,close_adj',
+                      'fields': 'open,close,high,low,close_adj,volume',
                       'freq': 1}
 
     ds = RemoteDataService()
@@ -64,9 +66,15 @@ def load_data(symbol):
     # df['low']   = dv.get_ts('low', symbol=symbol, start_date=20080101, end_date=20171231)[symbol]
 
     # df = df.dropna()
-    ts1 = dv.get_ts('open,close,high,low,close_adj,future_return_2,future_return_3,future_return_4,future_return_5', symbol='600030.SH', start_date=20080101, end_date=20080302)
+    # ts1 = dv.get_ts('open,close,high,low,close_adj,future_return_2,future_return_3,future_return_4,future_return_5', symbol='600030.SH', start_date=20080101, end_date=20080302)
+    ts1 = dv.get_ts('open,close,high,low,volume', symbol='600030.SH', start_date=20080101, end_date=20091002)['600030.SH']
+    ts1['date'] = ts1.index
+    ts1['date'] = pd.to_datetime(ts1['date'], format='%Y%m%d')
+    ts1 = ts1.reset_index(drop=True)
     print(ts1)
-    ts1.to_csv(path_or_buf='./read_picture/data/csv/600030.SH.csv', sep=',', index=True)
+    # indictor.plot_all(ts1, output='./read_picture/data/png.png')
+    trendline.plot_rsi(ts1)
+    # ts1.to_csv(path_or_buf='./read_picture/data/csv/600030.SH.csv', sep=',', index=True)
     # return df
 
 
@@ -374,5 +382,5 @@ def choice_pics(class_path):
 # get_data()
 # draw_pic('600703.SH', 'macd_j')
 # choice_pics('./data/prepared/pic_data/macd_j_pic2/')
-download_data()
+# download_data()
 load_data('')
