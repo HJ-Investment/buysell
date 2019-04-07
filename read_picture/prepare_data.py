@@ -13,6 +13,9 @@ from shutil import copyfile
 
 import trendline
 
+start_date = '20080101'
+end_time = '20181231'
+
 data_config = {
   "remote.data.address": "tcp://data.quantos.org:8910",
   "remote.data.username": "18652420434",
@@ -26,11 +29,32 @@ trade_config = {
 
 dataview_store_folder = './read_picture/data/prepared'
 
+api = DataApi(addr='tcp://data.quantos.org:8910')
+api.login(18652420434, 'eyJhbGciOiJIUzI1NiJ9.eyJjcmVhdGVfdGltZSI6IjE1MTcwNjAxMDgyOTMiLCJpc3MiOiJhdXRoMCIsImlkIjoiMTg2NTI0MjA0MzQifQ.b1ejSpbEVS7LhbsveZ5kvbWgUs7fnUd0-CBakPwNUu4')
+
+def get_index_info():
+    df, msg = api.query(
+                view="lb.indexCons", 
+                fields="index_code,symbol,in_date,out_date", 
+                filter="index_code=000905.SH&start_date=20080101&end_date=20181231", 
+                data_format='pandas')
+    print(msg)
+    return df
+
+def get_sec_susp():
+    df, msg = api.query(
+                view="lb.secSusp", 
+                fields="susp_date,resu_date,susp_reason,resu_time", 
+                filter="symbol=600410.SH&start_date=20080101&end_date=20181231", 
+                data_format='pandas')
+    print(msg)
+    df.to_csv(path_or_buf='./read_picture/data/csv/stop.csv', sep=',', index=True)
+    return df
 
 def download_data():
-    dataview_props = {'start_date': 20080101, 'end_date': 20091231,
-                    #   'universe': '000905.SH',
-                      'symbol':'600030.SH',
+    dataview_props = {'start_date': 20080101, 'end_date': 20181231,
+                      'universe': '000905.SH',
+                    #   'symbol':'600030.SH,600104.SH',
                       'fields': 'open,close,high,low,close_adj,volume',
                       'freq': 1}
 
@@ -54,7 +78,7 @@ def download_data():
     dv.save_dataview(folder_path=dataview_store_folder)
 
 
-def load_data(symbol):
+def save_data_to_csv():
     dv = DataView()
     dv.load_dataview(folder_path=dataview_store_folder)
 
@@ -66,14 +90,25 @@ def load_data(symbol):
     # df['low']   = dv.get_ts('low', symbol=symbol, start_date=20080101, end_date=20171231)[symbol]
 
     # df = df.dropna()
+    # snap1 = dv.get_snapshot(20080424, symbol='600030.SH', fields='open,close,high,low,volume')
     # ts1 = dv.get_ts('open,close,high,low,close_adj,future_return_2,future_return_3,future_return_4,future_return_5', symbol='600030.SH', start_date=20080101, end_date=20080302)
-    ts1 = dv.get_ts('open,close,high,low,volume', symbol='600030.SH', start_date=20080101, end_date=20091002)['600030.SH']
-    ts1['date'] = ts1.index
-    ts1['date'] = pd.to_datetime(ts1['date'], format='%Y%m%d')
-    ts1 = ts1.reset_index(drop=True)
-    print(ts1)
-    # indictor.plot_all(ts1, output='./read_picture/data/png.png')
-    trendline.plot_rsi(ts1)
+    sh_000905 = get_index_info()
+    for symbol in sh_000905['symbol']:
+        print(symbol)
+        ts_symbol = dv.get_ts('open,close,high,low,volume,future_return_2,future_return_3,future_return_4,future_return_5', symbol=symbol, start_date=start_date, end_date=end_time)[symbol]
+        ts_symbol['date'] = ts_symbol.index
+        ts_symbol['date'] = pd.to_datetime(ts_symbol['date'], format='%Y%m%d')
+        ts_symbol = ts_symbol.reset_index(drop=True)
+        _kdj = trendline.kdj(ts_symbol)
+        ts_symbol = trendline.join_frame(ts_symbol,_kdj)
+        save_csv(symbol, ts_symbol)
+
+    # ts1 = dv.get_ts('open,close,high,low,volume', symbol='600030.SH', start_date=20080101, end_date=20081002)['600030.SH']
+    # ts1['date'] = ts1.index
+    # ts1['date'] = pd.to_datetime(ts1['date'], format='%Y%m%d')
+    # ts1 = ts1.reset_index(drop=True)
+    # print(ts1)
+    # trendline.plot_kdj(ts1)
     # ts1.to_csv(path_or_buf='./read_picture/data/csv/600030.SH.csv', sep=',', index=True)
     # return df
 
@@ -112,7 +147,7 @@ def calculator_close(df):
 
 
 def save_csv(symbol, df):
-    df.to_csv(path_or_buf='./data/prepared/datacsv/' + symbol + '.csv', sep=',', index=True)
+    df.to_csv(path_or_buf='./read_picture/data/csv/' + symbol + '.csv', sep=',', index=True)
 
 
 def get_data(symbol=None):
@@ -383,4 +418,9 @@ def choice_pics(class_path):
 # draw_pic('600703.SH', 'macd_j')
 # choice_pics('./data/prepared/pic_data/macd_j_pic2/')
 # download_data()
-load_data('')
+# save_data_to_csv()
+
+# df = pd.read_csv('./read_picture/data/csv/test.csv', sep=',')
+# trendline.plot_kdj(df)
+df = get_sec_susp()
+print(df)
