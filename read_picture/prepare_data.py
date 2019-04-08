@@ -48,7 +48,7 @@ def get_sec_susp():
                 filter="symbol=600410.SH&start_date=20080101&end_date=20181231", 
                 data_format='pandas')
     print(msg)
-    df.to_csv(path_or_buf='./read_picture/data/csv/stop.csv', sep=',', index=True)
+    # df.to_csv(path_or_buf='./read_picture/data/csv/stop.csv', sep=',', index=True)
     return df
 
 def download_data():
@@ -420,7 +420,8 @@ def choice_pics(class_path):
 # download_data()
 # save_data_to_csv()
 
-# df = pd.read_csv('./read_picture/data/csv/test.csv', sep=',')
-# trendline.plot_kdj(df)
-df = get_sec_susp()
-print(df)
+df = pd.read_csv('./read_picture/data/csv/test.csv', sep=',')
+df = df[(df[['volume']] != 0).all(axis=1)]
+trendline.plot_rsi(df)
+# df = get_sec_susp()
+# print(df)
