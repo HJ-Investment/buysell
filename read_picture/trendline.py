@@ -1013,6 +1013,9 @@ def plot_rsi(data):
 
     plt.show()
 
+def plot_all(data)
+
+
 # if __name__ == "__main__":
     # import tushare as ts
     # data = ts.get_k_data("000063", start="2017-05-01")

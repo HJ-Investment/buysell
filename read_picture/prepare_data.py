@@ -54,7 +54,7 @@ def get_sec_susp():
 def download_data():
     dataview_props = {'start_date': 20080101, 'end_date': 20181231,
                       'universe': '000905.SH',
-                    #   'symbol':'600030.SH,600104.SH',
+                      # 'symbol':'600030.SH,600104.SH',
                       'fields': 'open,close,high,low,close_adj,volume',
                       'freq': 1}
 
@@ -66,13 +66,13 @@ def download_data():
     dv.init_from_config(dataview_props, ds)
     dv.prepare_data()
 
-    factor_formula = 'Delay(Return(close_adj, 2, 0), -3)'
+    factor_formula = 'Delay(Return(close_adj, 2, 0), -2)'
     dv.add_formula('future_return_2', factor_formula, is_quarterly=False, is_factor=False)
-    factor_formula = 'Delay(Return(close_adj, 3, 0), -4)'
+    factor_formula = 'Delay(Return(close_adj, 3, 0), -3)'
     dv.add_formula('future_return_3', factor_formula, is_quarterly=False, is_factor=False)
-    factor_formula = 'Delay(Return(close_adj, 4, 0), -5)'
+    factor_formula = 'Delay(Return(close_adj, 4, 0), -4)'
     dv.add_formula('future_return_4', factor_formula, is_quarterly=False, is_factor=False)
-    factor_formula = 'Delay(Return(close_adj, 5, 0), -6)'
+    factor_formula = 'Delay(Return(close_adj, 5, 0), -5)'
     dv.add_formula('future_return_5', factor_formula, is_quarterly=False, is_factor=False)
 
     dv.save_dataview(folder_path=dataview_store_folder)
@@ -100,7 +100,65 @@ def save_data_to_csv():
         ts_symbol['date'] = pd.to_datetime(ts_symbol['date'], format='%Y%m%d')
         ts_symbol = ts_symbol.reset_index(drop=True)
         _kdj = trendline.kdj(ts_symbol)
+        _macd = trendline.macd(ts_symbol)
+        _rsi = trendline.rsi(ts_symbol)
+        _vrsi = trendline.vrsi(ts_symbol)
+        _boll = trendline.boll(ts_symbol)
+        _bbiboll = trendline.bbiboll(ts_symbol)
+        _wr = trendline.wr(ts_symbol)
+        _bias = trendline.bias(ts_symbol)
+        _asi = trendline.asi(ts_symbol)
+        _vr_rate = trendline.vr_rate(ts_symbol)
+        _vr = trendline.vr(ts_symbol)
+        _arbr = trendline.arbr(ts_symbol)
+        _dpo = trendline.dpo(ts_symbol)
+        _trix = trendline.trix(ts_symbol)
+        _bbi = trendline.bbi(ts_symbol)
+        _mtm = trendline.mtm(ts_symbol)
+        _obv = trendline.obv(ts_symbol)
+        _cci = trendline.cci(ts_symbol)
+        _priceosc = trendline.priceosc(ts_symbol)
+        _dbcd = trendline.dbcd(ts_symbol)
+        _roc = trendline.roc(ts_symbol)
+        _vroc = trendline.vroc(ts_symbol)
+        _cr = trendline.cr(ts_symbol)
+        _psy = trendline.psy(ts_symbol)
+        _wad = trendline.wad(ts_symbol)
+        _mfi = trendline.mfi(ts_symbol)
+        _vosc = trendline.vosc(ts_symbol)
+        _jdqs = trendline.jdqs(ts_symbol)
+        _jdrs = trendline.jdrs(ts_symbol)
+
         ts_symbol = trendline.join_frame(ts_symbol,_kdj)
+        ts_symbol = trendline.join_frame(ts_symbol, _macd)
+        ts_symbol = trendline.join_frame(ts_symbol, _rsi)
+        ts_symbol = trendline.join_frame(ts_symbol, _vrsi)
+        ts_symbol = trendline.join_frame(ts_symbol, _boll)
+        ts_symbol = trendline.join_frame(ts_symbol, _bbiboll)
+        ts_symbol = trendline.join_frame(ts_symbol, _wr)
+        ts_symbol = trendline.join_frame(ts_symbol, _bias)
+        ts_symbol = trendline.join_frame(ts_symbol, _asi)
+        ts_symbol = trendline.join_frame(ts_symbol, _vr_rate)
+        ts_symbol = trendline.join_frame(ts_symbol, _vr)
+        ts_symbol = trendline.join_frame(ts_symbol, _arbr)
+        ts_symbol = trendline.join_frame(ts_symbol, _dpo)
+        ts_symbol = trendline.join_frame(ts_symbol, _trix)
+        ts_symbol = trendline.join_frame(ts_symbol, _bbi)
+        ts_symbol = trendline.join_frame(ts_symbol, _mtm)
+        ts_symbol = trendline.join_frame(ts_symbol, _obv)
+        ts_symbol = trendline.join_frame(ts_symbol, _cci)
+        ts_symbol = trendline.join_frame(ts_symbol, _priceosc)
+        ts_symbol = trendline.join_frame(ts_symbol, _dbcd)
+        ts_symbol = trendline.join_frame(ts_symbol, _roc)
+        ts_symbol = trendline.join_frame(ts_symbol, _vroc)
+        ts_symbol = trendline.join_frame(ts_symbol, _cr)
+        ts_symbol = trendline.join_frame(ts_symbol, _psy)
+        ts_symbol = trendline.join_frame(ts_symbol, _wad)
+        ts_symbol = trendline.join_frame(ts_symbol, _mfi)
+        ts_symbol = trendline.join_frame(ts_symbol, _vosc)
+        ts_symbol = trendline.join_frame(ts_symbol, _jdqs)
+        ts_symbol = trendline.join_frame(ts_symbol, _jdrs)
+
         save_csv(symbol, ts_symbol)
 
     # ts1 = dv.get_ts('open,close,high,low,volume', symbol='600030.SH', start_date=20080101, end_date=20081002)['600030.SH']
@@ -420,8 +478,6 @@ def choice_pics(class_path):
 # download_data()
 # save_data_to_csv()
 
-df = pd.read_csv('./read_picture/data/csv/test.csv', sep=',')
-df = df[(df[['volume']] != 0).all(axis=1)]
-trendline.plot_rsi(df)
-# df = get_sec_susp()
-# print(df)
+# df = pd.read_csv('./read_picture/data/csv/test.csv', sep=',')
+# df = df[(df[['volume']] != 0).all(axis=1)]
+# trendline.plot_rsi(df)
