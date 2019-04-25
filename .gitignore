@@ -229,3 +229,4 @@ output/rnn_50/pic_data/*
 c3d/UCF-101/*
 kaggle/output/*
 read_picture/data/*
+read_picture/read_picture/data/*

@@ -148,10 +148,10 @@ def boll(df, n=26, k=2):
     """
     _boll = pd.DataFrame()
     _boll['date'] = df.date
-    _boll['mid'] = _ma(df.close, n)
+    _boll['boll_mid'] = _ma(df.close, n)
     _mdd = _md(df.close, n)
-    _boll['up'] = _boll.mid + k * _mdd
-    _boll['low'] = _boll.mid - k * _mdd
+    _boll['boll_up'] = _boll.boll_mid + k * _mdd
+    _boll['boll_low'] = _boll.boll_mid - k * _mdd
     return _boll
 
 
@@ -166,10 +166,10 @@ def bbiboll(df, n=10, k=3):
     # pd.set_option('display.max_rows', 1000)
     _bbiboll = pd.DataFrame()
     _bbiboll['date'] = df.date
-    _bbiboll['bbi'] = (_ma(df.close, 3) + _ma(df.close, 6) + _ma(df.close, 12) + _ma(df.close, 24)) / 4
-    _bbiboll['md'] = _md(_bbiboll.bbi, n)
-    _bbiboll['upr'] = _bbiboll.bbi + k * _bbiboll.md
-    _bbiboll['dwn'] = _bbiboll.bbi - k * _bbiboll.md
+    _bbiboll['bbiboll_bbi'] = (_ma(df.close, 3) + _ma(df.close, 6) + _ma(df.close, 12) + _ma(df.close, 24)) / 4
+    _bbiboll['bbiboll_md'] = _md(_bbiboll.bbiboll_bbi, n)
+    _bbiboll['bbiboll_upr'] = _bbiboll.bbiboll_bbi + k * _bbiboll.bbiboll_md
+    _bbiboll['bbiboll_dwn'] = _bbiboll.bbiboll_bbi - k * _bbiboll.bbiboll_md
     return _bbiboll
 
 
@@ -237,7 +237,7 @@ def vr_rate(df, n=26):
     _m['avs'] = _m.apply(lambda x: x.volume if x.cs > 0 else 0, axis=1)
     _m['bvs'] = _m.apply(lambda x: x.volume if x.cs < 0 else 0, axis=1)
     _m['cvs'] = _m.apply(lambda x: x.volume if x.cs == 0 else 0, axis=1)
-    _vr["vr"] = (_m.avs.rolling(n).sum() + 1 / 2 * _m.cvs.rolling(n).sum()
+    _vr["vr_rate"] = (_m.avs.rolling(n).sum() + 1 / 2 * _m.cvs.rolling(n).sum()
                  ) / (_m.bvs.rolling(n).sum() + 1 / 2 * _m.cvs.rolling(n).sum()) * 100
     return _vr
 
@@ -372,7 +372,7 @@ def priceosc(df, n=12, m=26):
     _c = pd.DataFrame()
     _c['date'] = df['date']
     man = _ma(df.close, n)
-    _c['osc'] = (man - _ma(df.close, m)) / man * 100
+    _c['priceosc'] = (man - _ma(df.close, m)) / man * 100
     return _c
 
 
@@ -1013,7 +1013,6 @@ def plot_rsi(data):
 
     plt.show()
 
-def plot_all(data)
 
 
 # if __name__ == "__main__":
