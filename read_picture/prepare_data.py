@@ -484,5 +484,5 @@ df = pd.read_csv('./read_picture/data/csv/600030.SH.csv', sep=',')
 df = df[(df[['volume']] != 0).all(axis=1)]
 df['date'] = pd.to_datetime(df['date'])
 df = df[df['date'] > pd.datetime(2018, 10, 31)]
-print(df)
+# print(df)
 draw_indictors.plot_all(df)
