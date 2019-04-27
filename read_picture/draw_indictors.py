@@ -1,24 +1,36 @@
 # encoding: utf-8
-
+import matplotlib.pyplot as plt
+from mpl_finance import candlestick_ohlc
+from pylab import rcParams
+import numpy as np
+from matplotlib import dates as mdates
+import matplotlib.ticker as ticker
 
 def plot_all(data, is_show=True, output=None):
-    import matplotlib.pyplot as plt
-    from mpl_finance import candlestick_ohlc
-    from pylab import rcParams
-    import numpy as np
-    from matplotlib import dates as mdates
     rcParams['figure.figsize'] = (12, 6)
 
     plt.figure()
 
     data = data.dropna()
 
-    ax0 = plt.subplot(3, 1, 1)
+    ax0 = plt.subplot(3, 2, 1)
     quotes = data[['date','open','high','low','close']]
-    quotes['date'] = mdates.date2num(quotes['date'])
+    date_tickers=quotes.date.dt.date.values
+    print(date_tickers)
+    #用mdate产生连续时间
+    # quotes['date'] = mdates.date2num(quotes['date'])
+    # ax0.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    #我们要去掉周末，停牌，就不能传连续时间
+    quotes['date'] = range(len(quotes))
     candlestick_ohlc(ax0, quotes.values, colordown='#53c156', colorup='#ff1717', width=0.5)
-    ax0.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    
     plt.legend()
+    def format_date(x,pos=None):
+        if x<0 or x>len(date_tickers)-1:
+            return ''
+        return date_tickers[int(x)]
+    # ax0.xaxis.set_major_locator(ticker.MultipleLocator(6))
+    ax0.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
     plt.setp(ax0.get_xticklabels(), fontsize=5)
 
     # kdj

@@ -54,8 +54,8 @@ def get_sec_susp():
 
 def download_data():
     dataview_props = {'start_date': 20080101, 'end_date': 20181231,
-                      # 'universe': '000905.SH',
-                      'symbol':'600030.SH,600104.SH',
+                      'universe': '000905.SH',
+                    #   'symbol':'600030.SH,600104.SH',
                       'fields': 'open,close,high,low,close_adj,volume',
                       'freq': 1}
 
@@ -94,8 +94,8 @@ def save_data_to_csv():
     # snap1 = dv.get_snapshot(20080424, symbol='600030.SH', fields='open,close,high,low,volume')
     # ts1 = dv.get_ts('open,close,high,low,close_adj,future_return_2,future_return_3,future_return_4,future_return_5', symbol='600030.SH', start_date=20080101, end_date=20080302)
     sh_000905 = get_index_info()
-    # for symbol in sh_000905['symbol']:
-    for symbol in ['600030.SH', '600104.SH']:
+    for symbol in sh_000905['symbol']:
+    # for symbol in ['600030.SH', '600104.SH']:
         print(symbol)
         ts_symbol = dv.get_ts('open,close,high,low,volume,future_return_2,future_return_3,future_return_4,future_return_5', symbol=symbol, start_date=start_date, end_date=end_time)[symbol]
         ts_symbol['date'] = ts_symbol.index
@@ -480,9 +480,9 @@ def choice_pics(class_path):
 # download_data()
 # save_data_to_csv()
 
-df = pd.read_csv('./read_picture/data/csv/600030.SH.csv', sep=',')
+# df = pd.read_csv('./read_picture/data/csv/600030.SH.csv', sep=',')
+df = pd.read_csv('./read_picture/data/csv/000012.SZ.csv', sep=',')
 df = df[(df[['volume']] != 0).all(axis=1)]
-df['date'] = pd.to_datetime(df['date'])
+df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
 df = df[df['date'] > pd.datetime(2018, 10, 31)]
-# print(df)
-draw_indictors.plot_all(df)
+draw_indictors.plot_all(df, is_show=False, output='./read_picture/data/img/001.png')
