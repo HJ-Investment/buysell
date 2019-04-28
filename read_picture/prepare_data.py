@@ -173,39 +173,6 @@ def save_data_to_csv():
     # return df
 
 
-def prepare_kdj(df, n, ksgn='close'):
-    '''
-        【输入】
-            df, pd.dataframe格式数据源
-            n，时间长度
-            ksgn，列名，一般是：close收盘价
-        【输出】
-            df, pd.dataframe格式数据源,
-            增加了一栏：_{n}，输出数据
-    '''
-    low_list = df['low'].rolling(window=n, center=False).min()  # pd.rolling_min(df['low'], n)
-    low_list.fillna(value=df['low'].expanding(min_periods=1).min(), inplace=True)
-    high_list = df['high'].rolling(window=n, center=False).max()  # pd.rolling_max(df['high'], n)
-    high_list.fillna(value=df['high'].expanding(min_periods=1).max(), inplace=True)
-    rsv = (df[ksgn] - low_list) / (high_list - low_list) * 100
-
-    df['k'] = pd.ewma(rsv, com=2)
-    df['d'] = pd.ewma(df['k'], com=2)
-    df['j'] = 3.0 * df['k'] - 2.0 * df['d']
-    # print('n df',len(df))
-    return df
-
-
-def calculator_close(df):
-    df = df.reset_index()
-    close_five = df['close'][5:]
-    # print(close_five)
-    df['close_five_value'] = close_five.reset_index(drop=True)
-    # print(df)
-    df['close_five'] = (df['close_five_value'] - df['close']) / df['close']
-    return df
-
-
 def save_csv(symbol, df):
     df.to_csv(path_or_buf='./read_picture/data/csv/' + symbol + '.csv', sep=',', index=True)
 
@@ -303,9 +270,13 @@ def choice_pics(class_path):
 # download_data()
 # save_data_to_csv()
 
-df = pd.read_csv('./read_picture/data/csv/600030.SH.csv', sep=',')
-# df = pd.read_csv('./read_picture/data/csv/000012.SZ.csv', sep=',')
+# df = pd.read_csv('./read_picture/data/csv/600030.SH.csv', sep=',')
+df = pd.read_csv('./read_picture/data/csv/000012.SZ.csv', sep=',')
 df = df[(df[['volume']] != 0).all(axis=1)]
 df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
-df = df[df['date'] > pd.datetime(2018, 10, 31)]
-draw_indictors.plot_all(df) #, is_show=False, output='./read_picture/data/img/001.png')
+# df = df[df['date'] > pd.datetime(2018, 10, 31)]
+# draw_indictors.plot_all(df)
+
+for i in range(len(df) - 7):
+    output = './read_picture/data/img/' + str(i) + '.png'
+    draw_indictors.plot_all(df[35+i: 45+i], is_show=False, output=output)
