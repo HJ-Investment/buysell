@@ -16,7 +16,6 @@ def plot_all(data, is_show=True, output=None):
     ax_k = plt.subplot(4, 2, 1)
     quotes = data[['date','open','high','low','close']]
     date_tickers=quotes.date.dt.date.values
-    print(date_tickers)
     #用mdate产生连续时间
     # quotes['date'] = mdates.date2num(quotes['date'])
     # ax_k.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
@@ -125,3 +124,4 @@ def plot_all(data, is_show=True, output=None):
 
     if output is not None:
         plt.savefig(output)
+        plt.close('all')

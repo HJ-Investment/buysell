@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import talib
 import os
+import multiprocessing
 import matplotlib.pyplot as plt
 from random import sample
 from shutil import copyfile
@@ -177,44 +178,6 @@ def save_csv(symbol, df):
     df.to_csv(path_or_buf='./read_picture/data/csv/' + symbol + '.csv', sep=',', index=True)
 
 
-def draw_pic(symbol, pic_type=None):
-    df = pd.read_csv('./data/prepared/datacsv/' + symbol + '.csv', sep=',')
-    df.index = pd.to_datetime(df['trade_date'], format='%Y/%m/%d')
-    # df = df['2017-11-01':'2017-12-31']
-    df.reset_index(drop = True, inplace = True)
-    pic_count = 0
-    for i in range(len(df) - 8):
-        if pic_type == 'kdj':
-            pic_res = draw_kdj_pic(symbol, df[0 + i:3 + i], i)  # 画图的
-            if pic_res == 1:
-                pic_count += 1
-        elif pic_type == 'macd':
-            pic_res = create_macd_pic(symbol, df[0 + i:3 + i], i)  # 画图的
-            if pic_res == 1:
-                pic_count += 1
-        elif pic_type == 'fix':
-            pic_res = create_fixed_pic(symbol, df[0 + i:3 + i], i)
-            if pic_res == 1:
-                pic_count += 1
-        elif pic_type == 'macd_j':
-            j = df['j']
-            df['norm_j'] = j.apply(lambda x: (x - j.mean()) / (j.std()))
-            bar_value = df['MACDhist']*2
-            df['norm_bar'] = bar_value.apply(lambda x: (x - bar_value.mean()) / (bar_value.std()))
-            pic_res = create_macd_j_pic(symbol, df[0 + i:3 + i], i)
-            if pic_res == 1:
-                pic_count += 1
-        else:
-            pic_res_kdj = draw_kdj_pic(symbol, df[0 + i:3 + i], i)
-            pic_res_macd = create_macd_pic(symbol, df[0 + i:3 + i], i)
-            if pic_res_kdj == 1:
-                pic_count += 1
-            if pic_res_macd == 1:
-                pic_count += 1
-
-    print("stock:" + symbol + ';画图数量：' + str(pic_count))
-
-
 def choice_pics(class_path):
     class_path_up = class_path + 'up/'
     class_path_down = class_path + 'down/'
@@ -264,19 +227,48 @@ def choice_pics(class_path):
         copyfile(img_path, './data/validation/equal/' + img_name)
 
 
-# get_data()
-# draw_pic('600703.SH', 'macd_j')
-# choice_pics('./data/prepared/pic_data/macd_j_pic2/')
-# download_data()
-# save_data_to_csv()
+# # get_data()
+# # draw_pic('600703.SH', 'macd_j')
+# # choice_pics('./data/prepared/pic_data/macd_j_pic2/')
+# # download_data()
+# # save_data_to_csv()
 
-# df = pd.read_csv('./read_picture/data/csv/600030.SH.csv', sep=',')
-df = pd.read_csv('./read_picture/data/csv/000012.SZ.csv', sep=',')
+df = pd.read_csv('./read_picture/data/csv/600267.SH.csv', sep=',')
 df = df[(df[['volume']] != 0).all(axis=1)]
-df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
-# df = df[df['date'] > pd.datetime(2018, 10, 31)]
-# draw_indictors.plot_all(df)
+print(len(df))
+print(df[2612: 2622])
+# df = pd.read_csv('./read_picture/data/csv/000012.SZ.csv', sep=',')
+# df = df[(df[['volume']] != 0).all(axis=1)]
+# df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
+# # df = df[df['date'] > pd.datetime(2018, 10, 31)]
+# # draw_indictors.plot_all(df)
 
-for i in range(len(df) - 7):
-    output = './read_picture/data/img/' + str(i) + '.png'
-    draw_indictors.plot_all(df[35+i: 45+i], is_show=False, output=output)
+# for i in range(len(df) - 7):
+#     output = './read_picture/data/img/' + str(i) + '.png'
+#     # print(df[35+i:36+i]['future_return_4'])
+#     draw_indictors.plot_all(df[35+i: 45+i], is_show=False, output=output)
+
+# if __name__ == '__main__':
+#     multiprocessing.freeze_support()
+#     pool = multiprocessing.Pool()
+
+#     sh_000905 = get_index_info()
+#     for symbol in sh_000905['symbol']:
+#         df = pd.read_csv('./read_picture/data/csv/'+symbol+'.csv', sep=',')
+#         df = df[(df[['volume']] != 0).all(axis=1)]
+#         df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
+
+#         if not os.path.exists('./read_picture/data/img/'+symbol+'/up'):
+#             os.makedirs('./read_picture/data/img/'+symbol+'/up')
+#         if not os.path.exists('./read_picture/data/img/'+symbol+'/down'):
+#             os.makedirs('./read_picture/data/img/'+symbol+'/down')
+        
+#         for i in range(len(df) - 10 - 35):
+#             ts = df[35+i: 45+i]
+#             if(ts.head(1)['future_return_4'].values[0] > 0):
+#                 output = './read_picture/data/img/'+symbol+'/up/' + str(i) + '.png'
+#             else if(ts.head(1)['future_return_4'].values[0] < 0):
+#                 output = './read_picture/data/img/'+symbol+'/down/' + str(i) + '.png'
+#             pool.apply(draw_indictors.plot_all, args=(ts, False, output))
+#             draw_indictors.plot_all(df[35+i: 45+i], is_show=False, output=output)
+        
