@@ -285,10 +285,9 @@ def choice_pics(class_path):
 #     print("total: " + str(time.time() - ss))
 
 
-
 if __name__ == '__main__':
-    # multiprocessing.freeze_support()
-    # pool = multiprocessing.Pool()
+    multiprocessing.freeze_support()
+    pool = multiprocessing.Pool()
 
     count = 0
 
@@ -343,7 +342,8 @@ if __name__ == '__main__':
             pool.apply_async(draw_indictors.plot_all, args=(ts, False, output))
             # print(str(i) + "/" + str(count))
             # draw_indictors.plot_all(df[35+i: 45+i], is_show=False, output=output)
-        
+        pool.close()
+        pool.join()
         end = time.time()
         print("耗时：" + str(end - start))
         
