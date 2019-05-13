@@ -101,6 +101,10 @@ def save_data_to_csv():
     # for symbol in ['600030.SH', '600104.SH']:
         print(symbol)
         ts_symbol = dv.get_ts('open,close,high,low,volume,future_return_2,future_return_3,future_return_4,future_return_5', symbol=symbol, start_date=start_date, end_date=end_time)[symbol]
+
+        ts_symbol.fillna(0, replace=True)
+        ts_symbol = ts_symbol[(ts_symbol[['volume']] != 0).all(axis=1)]
+
         ts_symbol['date'] = ts_symbol.index
         ts_symbol['date'] = pd.to_datetime(ts_symbol['date'], format='%Y%m%d')
         ts_symbol = ts_symbol.reset_index(drop=True)
@@ -319,8 +323,7 @@ if __name__ == '__main__':
         count += 1
         print(str(count)+"/500")
         df = pd.read_csv('./read_picture/data/csv/'+symbol+'.csv', sep=',')
-        df = df.dropna(subset=['volume'], how='any')
-        df = df[(df[['volume']] != 0).all(axis=1)]
+
         df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
 
         # df.to_csv('./read_picture/data/csv/'+symbol+'_.csv', sep=',')

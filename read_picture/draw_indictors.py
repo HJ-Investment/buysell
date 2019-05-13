@@ -167,4 +167,4 @@ def plot_all(data, is_show=True, output=None):
         start9 = time.time()
         plt.savefig(output)
         plt.close('all')
-        print("save: " + str(time.time() - start6))
+        # print("save: " + str(time.time() - start6))
