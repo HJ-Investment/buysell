@@ -340,9 +340,9 @@ if __name__ == '__main__':
                 output = './read_picture/data/img/'+symbol+'/down/' + str(i) + '.png'
             else:
                 continue
-            # pool.apply(draw_indictors.plot_all, args=(ts, False, output))
+            pool.apply_async(draw_indictors.plot_all, args=(ts, False, output))
             # print(str(i) + "/" + str(count))
-            draw_indictors.plot_all(df[35+i: 45+i], is_show=False, output=output)
+            # draw_indictors.plot_all(df[35+i: 45+i], is_show=False, output=output)
         
         end = time.time()
         print("耗时：" + str(end - start))
