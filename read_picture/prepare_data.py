@@ -33,11 +33,14 @@ dataview_store_folder = './read_picture/data/prepared'
 api = DataApi(addr='tcp://data.quantos.org:8910')
 api.login(18652420434, 'eyJhbGciOiJIUzI1NiJ9.eyJjcmVhdGVfdGltZSI6IjE1MTcwNjAxMDgyOTMiLCJpc3MiOiJhdXRoMCIsImlkIjoiMTg2NTI0MjA0MzQifQ.b1ejSpbEVS7LhbsveZ5kvbWgUs7fnUd0-CBakPwNUu4')
 
+start_date = "20120101"
+end_date = "20181231"
+
 def get_index_info():
     df, msg = api.query(
                 view="lb.indexCons", 
                 fields="index_code,symbol,in_date,out_date", 
-                filter="index_code=000300.SH&start_date=20120101&end_date=20181231", 
+                filter="index_code=000905.SH&start_date=20120101&end_date=20181231", 
                 data_format='pandas')
     print("get_index_info: " +msg)
     return df
@@ -54,7 +57,7 @@ def get_sec_susp():
 
 def download_data():
     dataview_props = {'start_date': 20120101, 'end_date': 20181231,
-                      'universe': '000300.SH',
+                      'universe': '000905.SH',
                     #   'symbol':'600030.SH,600104.SH',
                       'fields': 'open,close,high,low,close_adj,volume',
                       'freq': 1}
@@ -97,9 +100,9 @@ def save_data_to_csv():
     for symbol in sh_000905['symbol']:
     # for symbol in ['600030.SH', '600104.SH']:
         print(symbol)
-        ts_symbol = dv.get_ts('open,close,high,low,volume,future_return_2,future_return_3,future_return_4,future_return_5', symbol=symbol, start_date=start_date, end_date=end_time)[symbol]
+        ts_symbol = dv.get_ts('open,close,high,low,volume,future_return_2,future_return_3,future_return_4,future_return_5', symbol=symbol, start_date=start_date, end_date=end_date)[symbol]
 
-        ts_symbol.fillna(0, replace=True)
+        ts_symbol.fillna(0, inplace=True)
         ts_symbol = ts_symbol[(ts_symbol[['volume']] != 0).all(axis=1)]
 
         ts_symbol['date'] = ts_symbol.index
@@ -290,19 +293,19 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     pool = multiprocessing.Pool()
 
-    download_data()
+    # download_data()
     save_data_to_csv()
 
     count = 0
 
     # sh_000905 = {'symbol':['000950.SZ']}
-    sh_000300 = get_index_info()
+    sh_000905 = get_index_info()
     # print(sh_000905)
-    for symbol in sh_000300['symbol']:
+    for symbol in sh_000905['symbol']:
         start = time.time()
         print(symbol)
         count += 1
-        print(str(count)+"/500")
+        print(str(count) + "/" + str(len(sh_000905)))
         df = pd.read_csv('./read_picture/data/csv/'+symbol+'.csv', sep=',')
 
         df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
