@@ -32,7 +32,7 @@ import time
 matplotlib.use('Agg')
 
 def plot_all(data, is_show=True, output=None):
-    rcParams['figure.figsize'] = (12, 6)
+    rcParams['figure.figsize'] = (2.24, 2.24)
 
     plt.figure()
 
@@ -58,6 +58,10 @@ def plot_all(data, is_show=True, output=None):
     plt.setp(ax_k.get_xticklabels(), fontsize=5)
     # plt.title("K线图")
     plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
     # print("K: " + str(time.time() - start1))
 
     #volume
@@ -69,6 +73,10 @@ def plot_all(data, is_show=True, output=None):
     # ax0.axes.yaxis.set_ticklabels([])
     # ax0.set_ylim(0, 3*data.volume.values.max())
     plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
     # print("volume: " + str(time.time() - start2))
 
     #cci
@@ -79,6 +87,10 @@ def plot_all(data, is_show=True, output=None):
     # plt.legend()
     plt.setp(ax1.get_xticklabels(), visible=False)
     plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
     # print("volume: " + str(time.time() - start3))
 
     # kdj
@@ -94,6 +106,10 @@ def plot_all(data, is_show=True, output=None):
     plt.setp(ax2.get_xticklabels(), visible=False)
     # plt.xticks(rotation=90)
     plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
     # print("kdj: " + str(time.time() - start4))
 
     # macd
@@ -112,6 +128,10 @@ def plot_all(data, is_show=True, output=None):
     plt.setp(ax3.get_xticklabels(), visible=False)
     # plt.xticks(rotation=90)
     plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
     # print("macd: " + str(time.time() - start5))
 
     #rsi
@@ -130,6 +150,10 @@ def plot_all(data, is_show=True, output=None):
     # plt.xticks(rotation=90)
     plt.setp(ax4.get_xticklabels(), visible=False)
     plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
     # print("rsi: " + str(time.time() - start6))
 
     #_boll
@@ -146,6 +170,10 @@ def plot_all(data, is_show=True, output=None):
     # plt.xticks(rotation=90)
     plt.setp(ax5.get_xticklabels(), fontsize=3)
     plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
     # print("_boll: " + str(time.time() - start6))
 
     # wr
@@ -156,6 +184,10 @@ def plot_all(data, is_show=True, output=None):
     # plt.legend()
     plt.setp(ax6.get_xticklabels(), fontsize=3)
     plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
     # print("wr: " + str(time.time() - start6))
 
     plt.tight_layout()
@@ -165,6 +197,6 @@ def plot_all(data, is_show=True, output=None):
 
     if output is not None:
         start9 = time.time()
-        plt.savefig(output)
+        plt.savefig(output, bbox_inches='tight', pad_inches=0.0)
         plt.close('all')
         # print("save: " + str(time.time() - start6))
