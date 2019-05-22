@@ -9,6 +9,27 @@ import os
 # images = df.iloc[:, 1:]
 # print(labels)
 
+def _fixed_sides_resize(image, output_height, output_width):
+    """Resize images by fixed sides.
+
+    Args:
+        image: A 3-D image `Tensor`.
+        output_height: The height of the image after preprocessing.
+        output_width: The width of the image after preprocessing.
+
+    Returns:
+        resized_image: A 3-D tensor containing the resized image.
+    """
+    output_height = tf.convert_to_tensor(output_height, dtype=tf.int32)
+    output_width = tf.convert_to_tensor(output_width, dtype=tf.int32)
+
+    image = tf.expand_dims(image, 0)
+    resized_image = tf.image.resize_nearest_neighbor(
+        image, [output_height, output_width], align_corners=False)
+    resized_image = tf.squeeze(resized_image)
+    resized_image.set_shape([None, None, 3])
+    return resized_image
+
 
 def read(df):
     dataset = tf.data.Dataset.from_tensor_slices(dict(df))
@@ -75,6 +96,23 @@ def val(df, batch_size):
     image = iterator.get_next()
     return image
 
+def get_resnet(df, batch_size):
+    def _parse_function(label, img):
+        image_raw = _fixed_sides_resize(img, 224，224)
+        return label, image_raw
+
+    labels = df['label']
+    df.drop(['label'], axis=1, inplace=True)
+    imgs = df
+    dataset = tf.data.Dataset.from_tensor_slices((labels, imgs))
+    dataset = dataset.map(_parse_function)
+    dataset = dataset.repeat(10)
+    dataset = dataset.batch(batch_size)
+
+    iterator = dataset.make_one_shot_iterator()
+    label, image = iterator.get_next()
+    return image, label
+
 
 # with tf.Session() as sess:
 #     sess.run(tf.global_variables_initializer())
@@ -95,8 +133,8 @@ def val(df, batch_size):
 #         # np.savetxt("prediction" + str(i) + ".csv", img, delimiter=",")
 #         # print(label)
 
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    df = pd.read_csv('./kaggle/test.csv', sep=',')
-    image_raw = sess.run(tf.reshape(df[5:6], [28, 28]))
-    np.savetxt("prediction.csv", image_raw, delimiter=",")
+# with tf.Session() as sess:
+#     sess.run(tf.global_variables_initializer())
+#     df = pd.read_csv('./kaggle/test.csv', sep=',')
+#     image_raw = sess.run(tf.reshape(df[5:6], [28, 28]))
+#     np.savetxt("prediction.csv", image_raw, delimiter=",")

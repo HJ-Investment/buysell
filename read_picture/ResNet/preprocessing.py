@@ -227,7 +227,7 @@ def _border_expand(image, mode='CONSTANT', constant_values=255):
     width = shape[1]
     
     def _pad_left_right():
-        pad_left = tf.floordiv(height - width, 2)
+        pad_left = tf.floordiv(height - width, 2)  # 针对浮点数的除法向下取整
         pad_right = height - width - pad_left
         return [[0, 0], [pad_left, pad_right], [0, 0]]
         
