@@ -27,8 +27,9 @@ def _fixed_sides_resize(image, output_height, output_width):
 
     image = tf.expand_dims(image, 0)
     resized_image = tf.image.resize_nearest_neighbor(
-        image, [output_height, output_width], align_corners=False)
-    resized_image = tf.squeeze(resized_image)
+        image, [output_height, output_width], align_corners=False)  # 返回[batch, height, width, channels]
+    resized_image = tf.squeeze(resized_image, 0)  # 去掉batch，留下[224, 224, 1]
+    resized_image = tf.concat([resized_image, resized_image, resized_image], -1)  # 单通道叠到3通道
     # resized_image = tf.expand_dims(resized_image, 2)
     # resized_image.set_shape([None, None, 1])
     return resized_image
