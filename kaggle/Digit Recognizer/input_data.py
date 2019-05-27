@@ -113,10 +113,12 @@ def get_resnet(df, batch_size):
     dataset = dataset.map(_parse_function)
     dataset = dataset.repeat(10)
     dataset = dataset.batch(batch_size)
+    return dataset
 
-    iterator = dataset.make_one_shot_iterator()
-    label, image = iterator.get_next()
-    return image, label
+    # # resnet的输入时dataset，所以不需要进一步处理
+    # iterator = dataset.make_one_shot_iterator()
+    # label, image = iterator.get_next()
+    # return image, label
 
 
 with tf.Session() as sess:
