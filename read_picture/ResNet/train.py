@@ -222,11 +222,11 @@ def create_model_fn(features, labels, mode, params=None):
     
     Args:
         features: A 4-D float32 tensor with shape [batch_size, height,
-            width, channels] representing a batch of images. (Support dict)
+            width, channels] representing a batch of images. (Support dict) 可以是一个张量，也可以是由张量组成的一个字典；
         labels: A 1-D int32 tensor with shape [batch_size] representing
-             the labels of each image. (Support dict)
-        mode: Mode key for tf.estimator.ModeKeys.
-        params: Parameter dictionary passed from the estimator.
+             the labels of each image. (Support dict) 可以是一个张量，也可以是由张量组成的一个字典；
+        mode: Mode key for tf.estimator.ModeKeys. 指定训练模式，可以取 （TRAIN, EVAL, PREDICT）三者之一；
+        params: Parameter dictionary passed from the estimator. 是一个（可要可不要的）字典，指定其它超参数。 
         
     Returns:
         An `EstimatorSpec` the encapsulates the model and its serving
@@ -283,7 +283,19 @@ def create_model_fn(features, labels, mode, params=None):
             tf.saved_model.signature_constants.PREDICT_METHOD_NAME:
                 tf.estimator.export.PredictOutput(export_output)}
     
-        
+
+    # tf.estimator.EstimatorSpec(
+        # mode, 指定当前是处于训练、验证还是预测状态
+        # predictions=None, 预测的一个张量，或者是由张量组成的一个字典
+        # loss=None, 损失张量
+        # train_op=None, 指定优化操作
+        # eval_metric_ops=None, 指定各种评估度量的字典，这个字典的值必须是如下两种形式： Metric 类的实例； 调用某个评估度量函数的结果对 (metric_tensor, update_op)；
+        # export_outputs=None, 用于模型保存，描述了导出到 SavedModel 的输出格式
+        # training_chief_hooks=None,
+        # training_hooks=None,
+        # scaffold=None, 一个 tf.train.Scaffold 对象，可以在训练阶段初始化、保存等时使用
+        # evaluation_hooks=None,
+        # prediction_hooks=None)    
     return tf.estimator.EstimatorSpec(mode=mode,
                                       predictions=prediction_dict,
                                       loss=loss,
@@ -411,21 +423,56 @@ def main(_):
     # Specify which gpu to be used
     os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
     
+
+    # tf.estimator.Estimator(model_fn, model_dir=None, config=None,
+                       # params=None, warm_start_from=None)
+    # model_fn 是模型函数；
+    # model_dir 是训练时模型保存的路径；
+    # config 是 tf.estimator.RunConfig 的配置对象；
+    # params 是传入 model_fn 的超参数字典；
+    # warm_start_from 或者是一个预训练文件的路径，或者是一个 tf.estimator.WarmStartSettings 对象，用于完整的配置热启动参数。
     estimator = tf.estimator.Estimator(model_fn=create_model_fn, 
                                        model_dir=FLAGS.model_dir)
+
     train_input_fn = create_input_fn([FLAGS.train_record_path], 
                                      batch_size=FLAGS.batch_size)
+
+    # 使用 tf.estimator.TrainSpec 指定训练输入函数及相关参数。该类的完整形式是：
+    # tf.estimator.TrainSpec(input_fn, max_steps, hooks)
+    # input_fn 用来提供训练时的输入数据；max_steps 指定总共训练多少步；hooks 是一个 tf.train.SessionRunHook 对象，用来配置分布式训练等参数。
     train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn,
                                         max_steps=FLAGS.num_steps)
+
     eval_input_fn = create_input_fn([FLAGS.val_record_path], 
                                     batch_size=FLAGS.batch_size,
                                     num_epochs=1)
+
     predict_input_fn = create_predict_input_fn()
+    
     eval_exporter = tf.estimator.FinalExporter(
         name='servo', serving_input_receiver_fn=predict_input_fn)
+
+    # 使用 tf.estimator.EvalSpec 指定验证输入函数及相关参数。该类的完整形式是：
+    # tf.estimator.EvalSpec(
+    #     input_fn,
+    #     steps=100,
+    #     name=None,
+    #     hooks=None,
+    #     exporters=None,
+    #     start_delay_secs=120,
+    #     throttle_secs=600)
+    # 其中 input_fn 用来提供验证时的输入数据；
+    # steps 指定总共验证多少步（一般设定为 None 即可）；
+    # hooks 用来配置分布式训练等参数；
+    # exporters 是一个 Exporter 迭代器，会参与到每次的模型验证；
+    # start_delay_secs 指定多少秒之后开始模型验证；
+    # throttle_secs 指定多少秒之后重新开始新一轮模型验证（当然，如果没有新的模型断点保存，则该数值秒之后不会进行模型验证，因此这是新一轮模型验证需要等待的最小秒数）
     eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, steps=None,
                                       exporters=eval_exporter)
     
+    # estimator 是一个 tf.estimator.Estimator 对象，用于指定模型函数以及其它相关参数；
+    # train_spec 是一个 tf.estimator.TrainSpec 对象，用于指定训练的输入函数以及其它参数；
+    # eval_spec 是一个 tf.estimator.EvalSpec 对象，用于指定验证的输入函数以及其它参数。
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
     
 if __name__ == '__main__':

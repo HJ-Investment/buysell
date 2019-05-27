@@ -37,6 +37,7 @@ class Model(object):
     def num_classes(self):
         return self._num_classes
         
+    # 数据预处理函数 preprocess
     def preprocess(self, inputs):
         """preprocessing.
         
@@ -59,6 +60,7 @@ class Model(object):
         preprocessed_inputs = tf.cast(preprocessed_inputs, tf.float32)
         return preprocessed_inputs
     
+    # 模型定义及预测函数 predict
     def predict(self, preprocessed_inputs):
         """Predict prediction tensors from inputs tensor.
         
@@ -82,6 +84,7 @@ class Model(object):
                                       scope='Predict/logits')
         return {'logits': logits}
     
+    # 预测结果后处理函数 postprocess
     def postprocess(self, prediction_dict):
         """Convert predicted output tensors to final forms.
         
