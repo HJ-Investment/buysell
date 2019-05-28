@@ -109,7 +109,11 @@ def get_resnet(df, batch_size):
     labels = df['label']
     df.drop(['label'], axis=1, inplace=True)
     imgs = df
-    dataset = tf.data.Dataset.from_tensor_slices((labels, imgs))
+    # dataset = tf.data.Dataset.from_tensor_slices((labels, imgs))
+    dataset = tf.data.Dataset.from_tensor_slices({
+        "image": imgs,
+        "label": labels
+    })
     dataset = dataset.map(_parse_function)
     dataset = dataset.repeat(10)
     dataset = dataset.batch(batch_size)
@@ -121,28 +125,28 @@ def get_resnet(df, batch_size):
     # return image, label
 
 
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    df = pd.read_csv('./kaggle/Digit Recognizer/data/train.csv', sep=',')
-    reshaped_image = get_resnet(df, 10)
-
-    for i in range(1):
-        # 每次sess.run(reshaped_image)，都会取出一张图片
-        imgs, labels = sess.run(reshaped_image)
-        k = 0
-        print('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        for img in imgs:
-            print('cccccccccccccccccccccccccccccccccccccc')
-            # np.savetxt("prediction" + str(k) + ".csv", img, delimiter=",")
-            scipy.misc.imsave('./kaggle/Digit Recognizer/output/img/test_%d.jpg' % k, img)
-            # with open() as f:
-            #     f.write(img)
-            k += 1
-        for label in labels:
-            print(label)
-        # print(imgs)
-        # np.savetxt("prediction" + str(i) + ".csv", img, delimiter=",")
-        # print(label)
+# with tf.Session() as sess:
+#     sess.run(tf.global_variables_initializer())
+#     df = pd.read_csv('./kaggle/Digit Recognizer/data/train.csv', sep=',')
+#     reshaped_image = get_resnet(df, 10)
+#
+#     for i in range(1):
+#         # 每次sess.run(reshaped_image)，都会取出一张图片
+#         imgs, labels = sess.run(reshaped_image)
+#         k = 0
+#         print('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+#         for img in imgs:
+#             print('cccccccccccccccccccccccccccccccccccccc')
+#             # np.savetxt("prediction" + str(k) + ".csv", img, delimiter=",")
+#             scipy.misc.imsave('./kaggle/Digit Recognizer/output/img/test_%d.jpg' % k, img)
+#             # with open() as f:
+#             #     f.write(img)
+#             k += 1
+#         for label in labels:
+#             print(label)
+#         # print(imgs)
+#         # np.savetxt("prediction" + str(i) + ".csv", img, delimiter=",")
+#         # print(label)
 
 # with tf.Session() as sess:
 #     sess.run(tf.global_variables_initializer())

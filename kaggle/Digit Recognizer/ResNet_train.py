@@ -15,38 +15,50 @@ import logging
 import os
 import tensorflow as tf
 
-import exporter
 import ResNet
 import input_data
+
+import pandas as pd
 
 slim = tf.contrib.slim
 flags = tf.app.flags
 
 flags.DEFINE_string('gpu_indices', '0', 'The index of gpus to used.')
+
 flags.DEFINE_string('train_record_path', 
-                    './datasets/train.record', 
+                    '/Users/RInz/Documents/buysell/kaggle/Digit Recognizer/data/train.csv',
                     'Path to training tfrecord file.')
+
 flags.DEFINE_string('val_record_path', 
-                    './datasets/val.record', 
+                    '/Users/RInz/Documents/buysell/kaggle/Digit Recognizer/data/val.csv',
                     'Path to validation tfrecord file.')
+
 flags.DEFINE_string('checkpoint_path',
-                    '/data1/model_zoo/resnet_v1_50.ckpt',
+                    None,
                     'Path to a pretrained model.')
-flags.DEFINE_string('model_dir', './training', 'Path to log directory.')
+
+flags.DEFINE_string('model_dir',
+                    '/Users/RInz/Documents/buysell/kaggle/Digit Recognizer/model',
+                    'Path to log directory.')
+
 flags.DEFINE_float('keep_checkpoint_every_n_hours', 
                    0.2,
                    'Save model checkpoint every n hours.')
+
 flags.DEFINE_string('learning_rate_decay_type',
                     'exponential',
                     'Specifies how the learning rate is decayed. One of '
                     '"fixed", "exponential", or "polynomial"')
+
 flags.DEFINE_float('learning_rate', 
                    0.0001, 
                    'Initial learning rate.')
+
 flags.DEFINE_float('end_learning_rate', 
                    0.000001,
                    'The minimal end learning rate used by a polynomial decay '
                    'learning rate.')
+
 flags.DEFINE_float('decay_steps',
                    1000,
                    'Number of epochs after which learning rate decays. '
@@ -54,12 +66,17 @@ flags.DEFINE_float('decay_steps',
                    'per sync replicas. So 1.0 means that each clone will go '
                    'over full epoch individually, but replicas will go once '
                    'across all replicas.')
+
 flags.DEFINE_float('learning_rate_decay_factor',
                    0.5,
                    'Learning rate decay factor.')
-flags.DEFINE_integer('num_classes', 2, 'Number of classes.')
+
+flags.DEFINE_integer('num_classes', 10, 'Number of classes.')
+
 flags.DEFINE_integer('batch_size', 64, 'Batch size.')
+
 flags.DEFINE_integer('num_steps', 5000, 'Number of steps.')
+
 flags.DEFINE_integer('input_size', 224, 'Number of steps.')
 
 FLAGS = flags.FLAGS
@@ -105,7 +122,7 @@ def create_model_fn(features, labels, mode, params=None):
     loss, acc, train_op, export_outputs = None, None, None, None
     is_training = mode == tf.estimator.ModeKeys.TRAIN
     
-    cls_model = model.Model(is_training=is_training, 
+    cls_model = ResNet.Model(is_training=is_training,
                             num_classes=FLAGS.num_classes)
     preprocessed_inputs = cls_model.preprocess(features.get('image'))
     prediction_dict = cls_model.predict(preprocessed_inputs)
@@ -300,7 +317,7 @@ def main(_):
     estimator = tf.estimator.Estimator(model_fn=create_model_fn, 
                                        model_dir=FLAGS.model_dir)
 
-    train_input_fn = create_input_fn([FLAGS.train_record_path], 
+    train_input_fn = create_input_fn(FLAGS.train_record_path,
                                      batch_size=FLAGS.batch_size)
 
     # 使用 tf.estimator.TrainSpec 指定训练输入函数及相关参数。该类的完整形式是：
@@ -309,9 +326,8 @@ def main(_):
     train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn,
                                         max_steps=FLAGS.num_steps)
 
-    eval_input_fn = create_input_fn([FLAGS.val_record_path], 
-                                    batch_size=FLAGS.batch_size,
-                                    num_epochs=1)
+    eval_input_fn = create_input_fn(FLAGS.val_record_path,
+                                    batch_size=FLAGS.batch_size)
 
     # 使用 tf.estimator.EvalSpec 指定验证输入函数及相关参数。该类的完整形式是：
     # tf.estimator.EvalSpec(

@@ -41,14 +41,7 @@ class Model(object):
             prediction_dict: A dictionary holding prediction tensors to be
                 passed to the Loss or Postprocess functions.
         """
-        preprocessed_inputs = preprocessing.preprocess_images(
-            inputs, self._default_image_size, self._default_image_size,
-            resize_side_min=self._fixed_resize_side,
-            is_training=self._is_training,
-            border_expand=False, normalize=False,
-            preserving_aspect_ratio_resize=False)
-        preprocessed_inputs = tf.cast(preprocessed_inputs, tf.float32)
-        return preprocessed_inputs
+        return inputs
 
     def predict(self, preprocessed_inputs):
         """Predict prediction tensors from inputs tensor.
