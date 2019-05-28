@@ -63,53 +63,6 @@ flags.DEFINE_integer('num_steps', 5000, 'Number of steps.')
 flags.DEFINE_integer('input_size', 224, 'Number of steps.')
 
 FLAGS = flags.FLAGS
-    
-    
-def transform_data(image):
-    size = FLAGS.input_size + 32
-    image = tf.squeeze(tf.image.resize_bilinear([image], size=[size, size]))
-    image = tf.to_float(image)
-    return image
-
-
-def read_dataset(file_read_fun, input_files, num_readers=1, shuffle=False,
-                 num_epochs=0, read_block_length=32, shuffle_buffer_size=2048):
-    """Reads a dataset, and handles repeatition and shuffling.
-    
-    This function and the following are modified from:
-        https://github.com/tensorflow/models/blob/master/research/
-            object_detection/builders/dataset_builder.py
-    
-    Args:
-        file_read_fun: Function to use in tf.contrib.data.parallel_iterleave,
-            to read every individual file into a tf.data.Dataset.
-        input_files: A list of file paths to read.
-        
-    Returns:
-        A tf.data.Dataset of (undecoded) tf-records.
-    """
-    # Shard, shuffle, and read files
-    filenames = tf.gfile.Glob(input_files)
-    if num_readers > len(filenames):
-        num_readers = len(filenames)
-        tf.logging.warning('num_readers has been reduced to %d to match input '
-                           'file shards.' % num_readers)
-    filename_dataset = tf.data.Dataset.from_tensor_slices(filenames)
-    if shuffle:
-        filename_dataset = filename_dataset.shuffle(100)
-    elif num_readers > 1:
-        tf.logging.warning('`shuffle` is false, but the input data stream is '
-                           'still slightly shuffled since `num_readers` > 1.')
-    filename_dataset = filename_dataset.repeat(num_epochs or None)
-    records_dataset = filename_dataset.apply(
-        tf.contrib.data.parallel_interleave(
-            file_read_fun,
-            cycle_length=num_readers,
-            block_length=read_block_length,
-            sloppy=shuffle))
-    if shuffle:
-        records_dataset = records_dataset.shuffle(shuffle_buffer_size)
-    return records_dataset  
 
 
 def create_input_fn(record_paths, batch_size=64):
@@ -127,38 +80,6 @@ def create_input_fn(record_paths, batch_size=64):
         return dataset
     
     return _input_fn
-
-
-def create_predict_input_fn():
-    """Creates a predict `input` function for `Estimator`.
-    
-    Modified from:
-        https://github.com/tensorflow/models/blob/master/research/
-            object_detection/inputs.py
-    
-    Returns:
-        `input_fn` for `Estimator` in PREDICT mode.
-    """
-    def _predict_input_fn():
-        """Decodes serialized tf.Examples and returns `ServingInputReceiver`.
-        
-        Returns:
-            `ServingInputReceiver`.
-        """
-        example = tf.placeholder(dtype=tf.string, shape=[], name='tf_example')
-        
-        decoder = get_decoder()
-        keys = decoder.list_items()
-        tensors = decoder.decode(example, items=keys)
-        tensor_dict = dict(zip(keys, tensors))
-        image = tensor_dict.get('image')
-        image = transform_data(image)
-        images = tf.expand_dims(image, axis=0)
-        return tf.estimator.export.ServingInputReceiver(
-            features={'image': images},
-            receiver_tensors={'serialized_example': example})
-        
-    return _predict_input_fn
 
 
 def create_model_fn(features, labels, mode, params=None):
@@ -230,7 +151,6 @@ def create_model_fn(features, labels, mode, params=None):
         export_outputs = {
             tf.saved_model.signature_constants.PREDICT_METHOD_NAME:
                 tf.estimator.export.PredictOutput(export_output)}
-    
 
     # tf.estimator.EstimatorSpec(
         # mode, 指定当前是处于训练、验证还是预测状态
@@ -370,10 +290,8 @@ def get_variables_available_in_checkpoint(variables,
 def main(_):
     # Specify which gpu to be used
     os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
-    
 
-    # tf.estimator.Estimator(model_fn, model_dir=None, config=None,
-                       # params=None, warm_start_from=None)
+    # tf.estimator.Estimator(model_fn, model_dir=None, config=None, params=None, warm_start_from=None)
     # model_fn 是模型函数；
     # model_dir 是训练时模型保存的路径；
     # config 是 tf.estimator.RunConfig 的配置对象；
@@ -395,11 +313,6 @@ def main(_):
                                     batch_size=FLAGS.batch_size,
                                     num_epochs=1)
 
-    predict_input_fn = create_predict_input_fn()
-    
-    eval_exporter = tf.estimator.FinalExporter(
-        name='servo', serving_input_receiver_fn=predict_input_fn)
-
     # 使用 tf.estimator.EvalSpec 指定验证输入函数及相关参数。该类的完整形式是：
     # tf.estimator.EvalSpec(
     #     input_fn,
@@ -415,8 +328,7 @@ def main(_):
     # exporters 是一个 Exporter 迭代器，会参与到每次的模型验证；
     # start_delay_secs 指定多少秒之后开始模型验证；
     # throttle_secs 指定多少秒之后重新开始新一轮模型验证（当然，如果没有新的模型断点保存，则该数值秒之后不会进行模型验证，因此这是新一轮模型验证需要等待的最小秒数）
-    eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, steps=None,
-                                      exporters=eval_exporter)
+    eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, steps=None)
     
     # estimator 是一个 tf.estimator.Estimator 对象，用于指定模型函数以及其它相关参数；
     # train_spec 是一个 tf.estimator.TrainSpec 对象，用于指定训练的输入函数以及其它参数；
