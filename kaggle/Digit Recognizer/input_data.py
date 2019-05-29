@@ -101,19 +101,16 @@ def val(df, batch_size):
     return image
 
 def get_resnet(df, batch_size):
-    def _parse_function(feature):
-        img = tf.reshape(feature.get("image"), [28, 28, 1])
+    def _parse_function(image, label):
+        img = tf.reshape(image, [28, 28, 1])
         image_raw = _fixed_sides_resize(img, 224, 224)
-        return {"image": image_raw, "label": feature.get("label")}
+        return tf.to_float(image_raw), label
 
     labels = df['label']
     df.drop(['label'], axis=1, inplace=True)
     imgs = df
     # dataset = tf.data.Dataset.from_tensor_slices((labels, imgs))
-    dataset = tf.data.Dataset.from_tensor_slices({
-        "image": imgs,
-        "label": labels
-    })
+    dataset = tf.data.Dataset.from_tensor_slices((imgs, labels))
     dataset = dataset.map(_parse_function)
     dataset = dataset.repeat(10)
     dataset = dataset.batch(batch_size)

@@ -18,6 +18,7 @@ import tensorflow as tf
 import ResNet
 import input_data
 import config
+import exporter
 
 import pandas as pd
 
@@ -52,11 +53,11 @@ flags.DEFINE_string('learning_rate_decay_type',
                     '"fixed", "exponential", or "polynomial"')
 
 flags.DEFINE_float('learning_rate', 
-                   0.0001, 
+                   0.01, 
                    'Initial learning rate.')
 
 flags.DEFINE_float('end_learning_rate', 
-                   0.000001,
+                   0.0001,
                    'The minimal end learning rate used by a polynomial decay '
                    'learning rate.')
 
