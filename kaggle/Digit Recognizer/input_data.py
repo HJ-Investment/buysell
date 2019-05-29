@@ -101,10 +101,10 @@ def val(df, batch_size):
     return image
 
 def get_resnet(df, batch_size):
-    def _parse_function(label, img):
-        img = tf.reshape(img, [28, 28, 1])
+    def _parse_function(feature):
+        img = tf.reshape(feature.get("image"), [28, 28, 1])
         image_raw = _fixed_sides_resize(img, 224, 224)
-        return label, image_raw
+        return {"image": image_raw, "label": feature.get("label")}
 
     labels = df['label']
     df.drop(['label'], axis=1, inplace=True)

@@ -17,6 +17,7 @@ import tensorflow as tf
 
 import ResNet
 import input_data
+import config
 
 import pandas as pd
 
@@ -26,11 +27,11 @@ flags = tf.app.flags
 flags.DEFINE_string('gpu_indices', '0', 'The index of gpus to used.')
 
 flags.DEFINE_string('train_record_path', 
-                    '/Users/RInz/Documents/buysell/kaggle/Digit Recognizer/data/train.csv',
+                    config.train_record_path,
                     'Path to training tfrecord file.')
 
 flags.DEFINE_string('val_record_path', 
-                    '/Users/RInz/Documents/buysell/kaggle/Digit Recognizer/data/val.csv',
+                    config.val_record_path,
                     'Path to validation tfrecord file.')
 
 flags.DEFINE_string('checkpoint_path',
@@ -38,7 +39,7 @@ flags.DEFINE_string('checkpoint_path',
                     'Path to a pretrained model.')
 
 flags.DEFINE_string('model_dir',
-                    '/Users/RInz/Documents/buysell/kaggle/Digit Recognizer/model',
+                    config.model_dir,
                     'Path to log directory.')
 
 flags.DEFINE_float('keep_checkpoint_every_n_hours', 
@@ -124,8 +125,8 @@ def create_model_fn(features, labels, mode, params=None):
     
     cls_model = ResNet.Model(is_training=is_training,
                             num_classes=FLAGS.num_classes)
-    preprocessed_inputs = cls_model.preprocess(features.get('image'))
-    prediction_dict = cls_model.predict(preprocessed_inputs)
+    # preprocessed_inputs = cls_model.preprocess(features.get('image'))
+    prediction_dict = cls_model.predict(features)
     postprocessed_dict = cls_model.postprocess(prediction_dict)
     
     if mode == tf.estimator.ModeKeys.TRAIN:
