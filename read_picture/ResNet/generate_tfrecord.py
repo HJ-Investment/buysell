@@ -28,19 +28,19 @@ import data_provider
 flags = tf.app.flags
 
 flags.DEFINE_string('images_dir', 
-                    '/data1/jingxiong_datasets/cat_dog_kaggle/train',
+                    'G:\\BaiduNetdiskDownload\\train\\',
                     'Path to images (directory).')
 flags.DEFINE_string('train_annotation_path', 
-                    './datasets/train.json',
+                    'F:/Code/buysell/read_picture/ResNet/datasets/train.json',
                     'Path to annotation`s .json file.')
 flags.DEFINE_string('train_output_path', 
-                    './datasets/train.record',
+                    'F:/Code/buysell/read_picture/ResNet/datasets/train.record',
                     'Path to output tfrecord file.')
 flags.DEFINE_string('val_annotation_path', 
-                    './datasets/val.json',
+                    'F:/Code/buysell/read_picture/ResNet/datasets/val.json',
                     'Path to annotation`s .json file.')
 flags.DEFINE_string('val_output_path', 
-                    './datasets/val.record',
+                    'F:/Code/buysell/read_picture/ResNet/datasets/val.record',
                     'Path to output tfrecord file.')
 flags.DEFINE_integer('resize_side_size', 256, 'Resize images to fixed size.')
 

@@ -18,13 +18,16 @@ def split_train_val_sets(images_dir, val_ratio=0.02):
     if not os.path.exists(images_dir):
         raise ValueError('`images_dir` does not exist.')
         
-    image_files = glob.glob(os.path.join(images_dir, '*.jpg'))
+    # image_files = glob.glob(os.path.join(images_dir, '*.jpg'))
+    image_files = glob.glob(images_dir + '*.jpg')
     num_val_samples = int(len(image_files) * val_ratio)
+    print(num_val_samples)
     val_files = image_files[:num_val_samples]
     train_files = image_files[num_val_samples:]
-    
+    print(val_files)
     train_dict = _get_labling_dict(train_files)
     val_dict = _get_labling_dict(val_files)
+    print(val_dict)
     return train_dict, val_dict
 
 
@@ -34,7 +37,7 @@ def _get_labling_dict(image_files=None):
     
     labling_dict = {}
     for image_file in image_files:
-        image_name = image_file.split('/')[-1]
+        image_name = image_file.split('\\')[-1]
         if image_name.startswith('cat'):
             labling_dict[image_file] = 0
         elif image_name.startswith('dog'):
@@ -47,7 +50,7 @@ def write_annotation_json(images_dir, train_json_output_path,
     """Save training and validation annotations."""
     train_files_dict, val_files_dict = split_train_val_sets(images_dir)
     train_json = json.dumps(train_files_dict)
-    
+    print(train_json)
     if train_json_output_path.startswith('./datasets'):
         if not os.path.exists('./datasets'):
             os.mkdir('./datasets')

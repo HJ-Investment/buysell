@@ -29,15 +29,15 @@ flags = tf.app.flags
 
 flags.DEFINE_string('gpu_indices', '0', 'The index of gpus to used.')
 flags.DEFINE_string('train_record_path', 
-                    './datasets/train.record', 
+                    'F:/Code/buysell/read_picture/ResNet/datasets/train.record', 
                     'Path to training tfrecord file.')
 flags.DEFINE_string('val_record_path', 
-                    './datasets/val.record', 
+                    'F:/Code/buysell/read_picture/ResNet/datasets/val.record', 
                     'Path to validation tfrecord file.')
 flags.DEFINE_string('checkpoint_path',
-                    '/data1/model_zoo/resnet_v1_50.ckpt',
+                    'F:/Code/buysell/read_picture/ResNet/datasets/resnet_v1_50.ckpt',
                     'Path to a pretrained model.')
-flags.DEFINE_string('model_dir', './training', 'Path to log directory.')
+flags.DEFINE_string('model_dir', 'F:/Code/buysell/read_picture/ResNet/training', 'Path to log directory.')
 flags.DEFINE_float('keep_checkpoint_every_n_hours', 
                    0.2,
                    'Save model checkpoint every n hours.')
@@ -423,6 +423,8 @@ def main(_):
     # Specify which gpu to be used
     os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
     
+    # session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
+    # config = tf.estimator.RunConfig(session_config=session_config)
 
     # tf.estimator.Estimator(model_fn, model_dir=None, config=None,
                        # params=None, warm_start_from=None)

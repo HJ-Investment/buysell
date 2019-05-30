@@ -231,3 +231,5 @@ kaggle/Digit Recognizer/output/*
 read_picture/data/*
 read_picture/read_picture/data/*
 kaggle/Digit Recognizer/config.py
+read_picture/ResNet/train/*
+read_picture/ResNet/datasets/*

@@ -113,7 +113,9 @@ def get_resnet(df, batch_size):
     dataset = tf.data.Dataset.from_tensor_slices((imgs, labels))
     dataset = dataset.map(_parse_function)
     dataset = dataset.repeat(10)
-    dataset = dataset.batch(batch_size)
+    # dataset = dataset.batch(batch_size)
+    dataset = dataset.apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
+    # dataset = dataset.prefetch(2)
     return dataset
 
     # # resnet的输入时dataset，所以不需要进一步处理
