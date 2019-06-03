@@ -122,7 +122,20 @@ def get_resnet(df, batch_size):
     # iterator = dataset.make_one_shot_iterator()
     # label, image = iterator.get_next()
     # return image, label
+    
+def get_resnet_val(df):
+    def _parse_function(image):
+        img = tf.reshape(image, [28, 28, 1])
+        image_raw = _fixed_sides_resize(img, 224, 224)
+        return tf.to_float(image_raw)
 
+    imgs = df
+    dataset = tf.data.Dataset.from_tensor_slices(imgs)
+    dataset = dataset.map(_parse_function)
+    
+    iterator = dataset.make_one_shot_iterator()
+    image = iterator.get_next()
+    return image
 
 # with tf.Session() as sess:
 #     sess.run(tf.global_variables_initializer())

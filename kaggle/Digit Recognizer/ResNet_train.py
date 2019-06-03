@@ -36,7 +36,7 @@ flags.DEFINE_string('val_record_path',
                     'Path to validation tfrecord file.')
 
 flags.DEFINE_string('checkpoint_path',
-                    None,
+                    config.checkpoint_path,
                     'Path to a pretrained model.')
 
 flags.DEFINE_string('model_dir',
@@ -44,7 +44,7 @@ flags.DEFINE_string('model_dir',
                     'Path to log directory.')
 
 flags.DEFINE_float('keep_checkpoint_every_n_hours', 
-                   0.05,
+                   1,
                    'Save model checkpoint every n hours.')
 
 flags.DEFINE_string('learning_rate_decay_type',
@@ -62,7 +62,7 @@ flags.DEFINE_float('end_learning_rate',
                    'learning rate.')
 
 flags.DEFINE_float('decay_steps',
-                   1000,
+                   500,
                    'Number of epochs after which learning rate decays. '
                    'Note: this flag counts epochs per clone but aggregates '
                    'per sync replicas. So 1.0 means that each clone will go '
@@ -311,7 +311,7 @@ def main(_):
     os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
 
     session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
-    config = tf.estimator.RunConfig(session_config=session_config)
+    config = tf.estimator.RunConfig(save_checkpoints_secs=120)
     # tf.estimator.Estimator(model_fn, model_dir=None, config=None, params=None, warm_start_from=None)
     # model_fn 是模型函数；
     # model_dir 是训练时模型保存的路径；
@@ -331,7 +331,7 @@ def main(_):
     train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn,
                                         max_steps=FLAGS.num_steps)
 
-    eval_input_fn = create_input_fn(FLAGS.val_record_path,
+    eval_input_fn = create_input_fn(FLAGS.val_record_path, 
                                     batch_size=FLAGS.batch_size)
 
     # 使用 tf.estimator.EvalSpec 指定验证输入函数及相关参数。该类的完整形式是：
