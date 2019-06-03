@@ -19,6 +19,7 @@ python3 train.py \
 import functools
 import logging
 import os
+import time
 import tensorflow as tf
 
 import exporter
@@ -27,7 +28,7 @@ import model
 slim = tf.contrib.slim
 flags = tf.app.flags
 
-flags.DEFINE_string('gpu_indices', '0', 'The index of gpus to used.')
+flags.DEFINE_string('gpu_indices', '0,1', 'The index of gpus to used.')
 flags.DEFINE_string('train_record_path', 
                     'F:/Code/buysell/read_picture/ResNet/datasets/train.record', 
                     'Path to training tfrecord file.')
@@ -65,9 +66,18 @@ flags.DEFINE_float('learning_rate_decay_factor',
 flags.DEFINE_integer('num_classes', 2, 'Number of classes.')
 flags.DEFINE_integer('batch_size', 64, 'Batch size.')
 flags.DEFINE_integer('num_steps', 5000, 'Number of steps.')
-flags.DEFINE_integer('input_size', 224, 'Number of steps.')
+flags.DEFINE_integer('input_size', 224, 'Size of input.')
+flags.DEFINE_integer('num_gpus', 2, 'Number of gpus')
 
 FLAGS = flags.FLAGS
+
+class TimeHistory(tf.train.SessionRunHook):
+    def begin(self):
+        self.times = []
+    def before_run(self, run_context):
+        self.iter_time_start = time.time()
+    def after_run(self, run_context, run_values):
+        self.times.append(time.time() - self.iter_time_start)
 
 
 def get_decoder():
@@ -421,10 +431,12 @@ def get_variables_available_in_checkpoint(variables,
 
 def main(_):
     # Specify which gpu to be used
-    os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
-    
-    # session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
-    # config = tf.estimator.RunConfig(session_config=session_config)
+    # os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
+
+    strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus)
+    session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
+    config = tf.estimator.RunConfig(session_config=session_config,
+                                    train_distribute=strategy)
 
     # tf.estimator.Estimator(model_fn, model_dir=None, config=None,
                        # params=None, warm_start_from=None)
@@ -441,9 +453,13 @@ def main(_):
 
     # 使用 tf.estimator.TrainSpec 指定训练输入函数及相关参数。该类的完整形式是：
     # tf.estimator.TrainSpec(input_fn, max_steps, hooks)
-    # input_fn 用来提供训练时的输入数据；max_steps 指定总共训练多少步；hooks 是一个 tf.train.SessionRunHook 对象，用来配置分布式训练等参数。
+    # input_fn 用来提供训练时的输入数据；
+    # max_steps 指定总共训练多少步；
+    # hooks 是一个 tf.train.SessionRunHook 对象，用来配置分布式训练等参数。
+    time_hist = TimeHistory()
     train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn,
-                                        max_steps=FLAGS.num_steps)
+                                        max_steps=FLAGS.num_steps,
+                                        hooks=[time_hist])
 
     eval_input_fn = create_input_fn([FLAGS.val_record_path], 
                                     batch_size=FLAGS.batch_size,
@@ -476,6 +492,12 @@ def main(_):
     # train_spec 是一个 tf.estimator.TrainSpec 对象，用于指定训练的输入函数以及其它参数；
     # eval_spec 是一个 tf.estimator.EvalSpec 对象，用于指定验证的输入函数以及其它参数。
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+
+    total_time = sum(time_hist.times)
+    print(f"total time with {FLAGS.num_gpus} GPU(s): {total_time} seconds")
+    avg_time_per_batch = np.mean(time_hist.times)
+    print(f"{FLAGS.batch_size*FLAGS.num_gpus/avg_time_per_batch} images/second with {FLAGS.num_gpus} GPU(s)")
+
     
 if __name__ == '__main__':
     tf.app.run()
