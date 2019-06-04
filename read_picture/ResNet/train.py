@@ -433,20 +433,21 @@ def main(_):
     # Specify which gpu to be used
     # os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
 
-    strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus)
+    strategy = tf.contrib.distribute.MirroredStrategy()
     session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
     config = tf.estimator.RunConfig(session_config=session_config,
-                                    train_distribute=strategy)
+                                    train_distribute=strategy,
+                                    save_checkpoints_secs=120)
 
-    # tf.estimator.Estimator(model_fn, model_dir=None, config=None,
-                       # params=None, warm_start_from=None)
+    # tf.estimator.Estimator(model_fn, model_dir=None, config=None, params=None, warm_start_from=None)
     # model_fn 是模型函数；
     # model_dir 是训练时模型保存的路径；
     # config 是 tf.estimator.RunConfig 的配置对象；
     # params 是传入 model_fn 的超参数字典；
     # warm_start_from 或者是一个预训练文件的路径，或者是一个 tf.estimator.WarmStartSettings 对象，用于完整的配置热启动参数。
     estimator = tf.estimator.Estimator(model_fn=create_model_fn, 
-                                       model_dir=FLAGS.model_dir)
+                                       model_dir=FLAGS.model_dir,
+                                       config=config)
 
     train_input_fn = create_input_fn([FLAGS.train_record_path], 
                                      batch_size=FLAGS.batch_size)
