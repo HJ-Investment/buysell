@@ -34,12 +34,12 @@ import tensorflow as tf
 
 import resnet_model
 import image_preprocessing
-from utils.flags import core as flags_core
-from utils.export import export
-from utils.logs import hooks_helper
-from utils.logs import logger
-from utils.misc import distribution_utils
-from utils.misc import model_helpers
+from official.utils.flags import core as flags_core
+from official.utils.export import export
+from official.utils.logs import hooks_helper
+from official.utils.logs import logger
+from official.utils.misc import distribution_utils
+from official.utils.misc import model_helpers
 
 
 ################################################################################
