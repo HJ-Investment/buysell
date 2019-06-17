@@ -11,8 +11,6 @@ from tensorflow.contrib.slim import nets
 
 import preprocessing
 
-slim = tf.contrib.slim
-    
         
 class Model(object):
     """xxx definition."""
