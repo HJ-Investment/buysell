@@ -236,3 +236,4 @@ read_picture/resnet_using_slim/training/*
 read_picture/resnet_using_slim/datasets/*
 kaggle/Digit Recognizer/model/*
 read_picture/resnet/datasets/*
+read_picture/resnet/training/*

@@ -434,10 +434,9 @@ def main(_):
     # os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
 
     # strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus)
-    strategy = tf.distribute.MirroredStrategy()
+    # strategy = tf.distribute.MirroredStrategy()
     # session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
-    config = tf.estimator.RunConfig(train_distribute=strategy,
-                                    save_checkpoints_secs=120)
+    config = tf.estimator.RunConfig(save_checkpoints_secs=120)
 
     # tf.estimator.Estimator(model_fn, model_dir=None, config=None, params=None, warm_start_from=None)
     # model_fn 是模型函数；

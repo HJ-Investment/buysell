@@ -30,15 +30,15 @@ flags = tf.app.flags
 
 flags.DEFINE_string('gpu_indices', '0,1', 'The index of gpus to used.')
 flags.DEFINE_string('train_record_path',
-                    'F:/Code/buysell/read_picture/ResNet/datasets/train.record',
+                    'F:/Code/buysell/read_picture/resnet/datasets/train.record',
                     'Path to training tfrecord file.')
 flags.DEFINE_string('val_record_path',
-                    'F:/Code/buysell/read_picture/ResNet/datasets/val.record',
+                    'F:/Code/buysell/read_picture/resnet/datasets/val.record',
                     'Path to validation tfrecord file.')
 flags.DEFINE_string('checkpoint_path',
-                    'F:/Code/buysell/read_picture/ResNet/datasets/resnet_v1_50.ckpt',
+                    'F:/Code/buysell/read_picture/resnet/datasets/resnet_v1_50.ckpt',
                     'Path to a pretrained model.')
-flags.DEFINE_string('model_dir', 'F:/Code/buysell/read_picture/ResNet/training', 'Path to log directory.')
+flags.DEFINE_string('model_dir', 'F:/Code/buysell/read_picture/resnet/training', 'Path to log directory.')
 flags.DEFINE_float('keep_checkpoint_every_n_hours',
                    0.2,
                    'Save model checkpoint every n hours.')
@@ -46,6 +46,7 @@ flags.DEFINE_string('learning_rate_decay_type',
                     'exponential',
                     'Specifies how the learning rate is decayed. One of '
                     '"fixed", "exponential", or "polynomial"')
+flags.DEFINE_integer('pretrained_model_checkpoint_path', None, '')
 flags.DEFINE_float('learning_rate',
                    0.0001,
                    'Initial learning rate.')
@@ -69,9 +70,9 @@ flags.DEFINE_float('label_smoothing',
 flags.DEFINE_float('momentum',
                    0.9,
                    'Momentum.')
-flags.DEFINE_float(name='weight_decay',
-                   default=1e-4,
-                   help=flags_core.help_wrap('Weight decay coefficiant for l2 regularization.'))
+flags.DEFINE_float('weight_decay',
+                   1e-4,
+                   'Weight decay coefficiant for l2 regularization.')
 flags.DEFINE_integer('num_classes', 2, 'Number of classes.')
 flags.DEFINE_integer('batch_size', 64, 'Batch size.')
 flags.DEFINE_integer('num_steps', 5000, 'Number of steps.')
@@ -79,6 +80,7 @@ flags.DEFINE_integer('input_size', 224, 'Size of input.')
 flags.DEFINE_integer('num_gpus', 2, 'Number of gpus')
 flags.DEFINE_boolean('loss_scale', 1, "Loss scale")
 flags.DEFINE_boolean('fp16_implementation', 1, 'fp16 implementation')
+flags.DEFINE_boolean('enable_lars', False, '')
 
 FLAGS = flags.FLAGS
 
@@ -159,8 +161,9 @@ def create_input_fn(record_paths, batch_size=64,
             tensor_dict = dict(zip(keys, tensors))
             image = tensor_dict.get('image')
             image = transform_data(image)
-            features_dict = {'image': image}
-            return features_dict, tensor_dict.get('label')
+            # features_dict = {'image': image}
+            # return features_dict, tensor_dict.get('label')
+            return image, tensor_dict.get('label')
 
         dataset = read_dataset(
             functools.partial(tf.data.TFRecordDataset,
@@ -205,96 +208,30 @@ def create_predict_input_fn():
     return _predict_input_fn
 
 
-def create_model_fn(features, labels, mode, params=None):
-
-    params = params or {}
-    loss, acc, train_op, export_outputs = None, None, None, None
-    is_training = mode == tf.estimator.ModeKeys.TRAIN
-
-    cls_model = model.Model(is_training=is_training,
-                            num_classes=FLAGS.num_classes)
-    preprocessed_inputs = cls_model.preprocess(features.get('image'))
-    prediction_dict = cls_model.predict(preprocessed_inputs)
-    postprocessed_dict = cls_model.postprocess(prediction_dict)
-
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        if FLAGS.checkpoint_path:
-            init_variables_from_checkpoint()
-
-    if mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL):
-        loss_dict = cls_model.loss(prediction_dict, labels)
-        loss = loss_dict['loss']
-        classes = postprocessed_dict['classes']
-        acc = tf.reduce_mean(tf.cast(tf.equal(classes, labels), 'float'))
-        tf.summary.scalar('loss', loss)
-        tf.summary.scalar('accuracy', acc)
-
-    scaffold = None
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        global_step = tf.train.get_or_create_global_step()
-        learning_rate = configure_learning_rate(FLAGS.decay_steps,
-                                                global_step)
-        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
-                                               momentum=0.9)
-        train_op = slim.learning.create_train_op(loss, optimizer,
-                                                 summarize_gradients=True)
-
-        keep_checkpoint_every_n_hours = FLAGS.keep_checkpoint_every_n_hours
-        saver = tf.train.Saver(
-            sharded=True,
-            keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
-            save_relative_paths=True)
-        tf.add_to_collection(tf.GraphKeys.SAVERS, saver)
-        scaffold = tf.train.Scaffold(saver=saver)
-
-    eval_metric_ops = None
-    if mode == tf.estimator.ModeKeys.EVAL:
-        accuracy = tf.metrics.accuracy(labels=labels, predictions=classes)
-        eval_metric_ops = {'Accuracy': accuracy}
-
-    if mode == tf.estimator.ModeKeys.PREDICT:
-        export_output = exporter._add_output_tensor_nodes(postprocessed_dict)
-        export_outputs = {
-            tf.saved_model.signature_constants.PREDICT_METHOD_NAME:
-                tf.estimator.export.PredictOutput(export_output)}
-
-
-        # tf.estimator.EstimatorSpec(
-        # mode, 指定当前是处于训练、验证还是预测状态
-        # predictions=None, 预测的一个张量，或者是由张量组成的一个字典
-        # loss=None, 损失张量
-        # train_op=None, 指定优化操作
-        # eval_metric_ops=None, 指定各种评估度量的字典，这个字典的值必须是如下两种形式： Metric 类的实例； 调用某个评估度量函数的结果对 (metric_tensor, update_op)；
-        # export_outputs=None, 用于模型保存，描述了导出到 SavedModel 的输出格式
-        # training_chief_hooks=None,
-        # training_hooks=None,
-        # scaffold=None, 一个 tf.train.Scaffold 对象，可以在训练阶段初始化、保存等时使用
-        # evaluation_hooks=None,
-        # prediction_hooks=None)
-    return tf.estimator.EstimatorSpec(mode=mode,
-                                      predictions=prediction_dict,
-                                      loss=loss,
-                                      train_op=train_op,
-                                      eval_metric_ops=eval_metric_ops,
-                                      export_outputs=export_outputs,
-                                      scaffold=scaffold)
-
 def _get_block_sizes(resnet_size):
-  choices = {
-      18: [2, 2, 2, 2],
-      34: [3, 4, 6, 3],
-      50: [3, 4, 6, 3],
-      101: [3, 4, 23, 3],
-      152: [3, 8, 36, 3],
-      200: [3, 24, 36, 3]
-  }
+    choices = {
+        18: [2, 2, 2, 2],
+        34: [3, 4, 6, 3],
+        50: [3, 4, 6, 3],
+        101: [3, 4, 23, 3],
+        152: [3, 8, 36, 3],
+        200: [3, 24, 36, 3]
+    }
+    try:
+        return choices[resnet_size]
+    except KeyError:
+        err = ('Could not find layers for selected Resnet size.\n'
+            'Size received: {}; sizes allowed: {}.'.format(
+            resnet_size, choices.keys()))
+        raise ValueError(err)
+
 
 def resnet_model_fn(features, labels, mode, params):
 
     # Generate a summary node for the images
     tf.compat.v1.summary.image('images', features, max_outputs=6)
     # Checks that features/images have same data type being used for calculations.
-    assert features.dtype == dtype
+    assert features.dtype == resnet_model.DEFAULT_DTYPE
 
     resnet_size = params['resnet_size']
     if resnet_size < 50:
@@ -312,7 +249,7 @@ def resnet_model_fn(features, labels, mode, params):
                                block_sizes=_get_block_sizes(resnet_size),
                                block_strides=[1, 2, 2, 2],
                                resnet_version=resnet_model.DEFAULT_VERSION,
-                               data_format=resnet_model.DEFAULT_DTYPE,
+                               data_format='channels_first',
                                dtype=resnet_model.DEFAULT_DTYPE)
 
     logits = model(features, mode == tf.estimator.ModeKeys.TRAIN)
@@ -367,17 +304,18 @@ def resnet_model_fn(features, labels, mode, params):
     tf.compat.v1.summary.scalar('l2_loss', l2_loss)
     loss = cross_entropy + l2_loss
 
+    scaffold = None
     if mode == tf.estimator.ModeKeys.TRAIN:
         global_step = tf.compat.v1.train.get_or_create_global_step()
-
-        learning_rate = learning_rate_fn(global_step)
+        learning_rate = configure_learning_rate(FLAGS.decay_steps,
+                                                global_step)
 
         # Create a tensor named learning_rate for logging purposes
         tf.identity(learning_rate, name='learning_rate')
         tf.compat.v1.summary.scalar('learning_rate', learning_rate)
 
         momentum = FLAGS.momentum
-        if flags.FLAGS.enable_lars:
+        if FLAGS.enable_lars:
             optimizer = tf.contrib.opt.LARSOptimizer(
                 learning_rate,
                 momentum=momentum,
@@ -427,6 +365,14 @@ def resnet_model_fn(features, labels, mode, params):
 
         update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
         train_op = tf.group(minimize_op, update_ops)
+
+        keep_checkpoint_every_n_hours = FLAGS.keep_checkpoint_every_n_hours
+        saver = tf.train.Saver(
+            sharded=True,
+            keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
+            save_relative_paths=True)
+        tf.add_to_collection(tf.GraphKeys.SAVERS, saver)
+        scaffold = tf.train.Scaffold(saver=saver)
     else:
         train_op = None
 
@@ -447,20 +393,33 @@ def resnet_model_fn(features, labels, mode, params):
         predictions=predictions,
         loss=loss,
         train_op=train_op,
-        eval_metric_ops=metrics)
+        eval_metric_ops=metrics,
+        scaffold=scaffold)
 
 
-def learning_rate_fn(global_step):
-    """Builds scaled learning rate function with 5 epoch warm up."""
-    lr = tf.compat.v1.train.piecewise_constant(global_step, boundaries, vals)
-    if warmup:
-        warmup_steps = int(batches_per_epoch * 5)
-        warmup_lr = (initial_learning_rate * tf.cast(global_step, tf.float32) / tf.cast(
-            warmup_steps, tf.float32))
-        return tf.cond(pred=global_step < warmup_steps,
-                       true_fn=lambda: warmup_lr,
-                       false_fn=lambda: lr)
-    return lr
+def configure_learning_rate(decay_steps, global_step):
+
+    if FLAGS.learning_rate_decay_type == 'exponential':
+        return tf.train.exponential_decay(FLAGS.learning_rate,
+                                          global_step,
+                                          decay_steps,
+                                          FLAGS.learning_rate_decay_factor,
+                                          staircase=True,
+                                          name='exponential_decay_learning_rate')
+    elif FLAGS.learning_rate_decay_type == 'fixed':
+        return tf.constant(FLAGS.learning_rate, name='fixed_learning_rate')
+    elif FLAGS.learning_rate_decay_type == 'polynomial':
+        return tf.train.polynomial_decay(FLAGS.learning_rate,
+                                         global_step,
+                                         decay_steps,
+                                         FLAGS.end_learning_rate,
+                                         power=1.0,
+                                         cycle=False,
+                                         name='polynomial_decay_learning_rate')
+    else:
+        raise ValueError('learning_rate_decay_type [%s] was not recognized' %
+                         FLAGS.learning_rate_decay_type)
+        
 
 
 def init_variables_from_checkpoint(checkpoint_exclude_scopes=None):
@@ -518,11 +477,18 @@ def main(_):
     # os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
 
     # strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus)
-    strategy = tf.distribute.MirroredStrategy()
-    # session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
-    config = tf.estimator.RunConfig(train_distribute=strategy,
-                                    save_checkpoints_secs=120)
+    # strategy = tf.distribute.MirroredStrategy()
+    session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.7))
+    config = tf.estimator.RunConfig(#train_distribute=strategy,
+                                    save_checkpoints_secs=120,
+                                    session_config=session_config)
 
+    if FLAGS.pretrained_model_checkpoint_path is not None:
+        warm_start_settings = tf.estimator.WarmStartSettings(
+            FLAGS.pretrained_model_checkpoint_path,
+            vars_to_warm_start='^(?!.*dense)')
+    else:
+        warm_start_settings = None
     # tf.estimator.Estimator(model_fn, model_dir=None, config=None, params=None, warm_start_from=None)
     # model_fn 是模型函数；
     # model_dir 是训练时模型保存的路径；
@@ -531,7 +497,9 @@ def main(_):
     # warm_start_from 或者是一个预训练文件的路径，或者是一个 tf.estimator.WarmStartSettings 对象，用于完整的配置热启动参数。
     estimator = tf.estimator.Estimator(model_fn=resnet_model_fn,
                                        model_dir=FLAGS.model_dir,
-                                       config=config)
+                                       config=config,
+                                       warm_start_from=warm_start_settings,
+                                       params={'resnet_size': 50})
 
     train_input_fn = create_input_fn([FLAGS.train_record_path],
                                      batch_size=FLAGS.batch_size)
