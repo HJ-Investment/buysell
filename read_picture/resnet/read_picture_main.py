@@ -25,6 +25,9 @@ import tensorflow as tf
 import exporter
 import resnet_model
 
+from official.utils.logs import hooks_helper
+from official.utils.misc import distribution_utils
+
 slim = tf.contrib.slim
 flags = tf.app.flags
 
@@ -36,7 +39,7 @@ flags.DEFINE_string('val_record_path',
                     'F:/Code/buysell/read_picture/resnet/datasets/val.record',
                     'Path to validation tfrecord file.')
 flags.DEFINE_string('checkpoint_path',
-                    'F:/Code/buysell/read_picture/resnet/datasets/resnet_v1_50.ckpt',
+                    'F:/Code/buysell/read_picture/resnet/datasets/resnet/training',
                     'Path to a pretrained model.')
 flags.DEFINE_string('model_dir', 'F:/Code/buysell/read_picture/resnet/training', 'Path to log directory.')
 flags.DEFINE_float('keep_checkpoint_every_n_hours',
@@ -108,7 +111,7 @@ def get_decoder():
 
 
 def transform_data(image):
-    size = FLAGS.input_size + 32
+    size = FLAGS.input_size
     image = tf.squeeze(tf.image.resize_bilinear([image], size=[size, size]))
     image = tf.to_float(image)
     return image
@@ -306,6 +309,7 @@ def resnet_model_fn(features, labels, mode, params):
 
     scaffold = None
     if mode == tf.estimator.ModeKeys.TRAIN:
+        
         global_step = tf.compat.v1.train.get_or_create_global_step()
         learning_rate = configure_learning_rate(FLAGS.decay_steps,
                                                 global_step)
@@ -365,14 +369,17 @@ def resnet_model_fn(features, labels, mode, params):
 
         update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
         train_op = tf.group(minimize_op, update_ops)
+        
 
-        keep_checkpoint_every_n_hours = FLAGS.keep_checkpoint_every_n_hours
-        saver = tf.train.Saver(
-            sharded=True,
-            keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
-            save_relative_paths=True)
-        tf.add_to_collection(tf.GraphKeys.SAVERS, saver)
-        scaffold = tf.train.Scaffold(saver=saver)
+        # keep_checkpoint_every_n_hours = FLAGS.keep_checkpoint_every_n_hours
+        # saver = tf.train.Saver(
+        #     sharded=True,
+        #     keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
+        #     save_relative_paths=True)
+        # # if not tf.get_collection(tf.GraphKeys.SAVERS):
+        # tf.add_to_collection(tf.GraphKeys.SAVERS, saver)
+        # scaffold = tf.train.Scaffold(saver=saver)
+
     else:
         train_op = None
 
@@ -476,12 +483,15 @@ def main(_):
     # Specify which gpu to be used
     # os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu_indices
 
-    # strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus)
-    # strategy = tf.distribute.MirroredStrategy()
-    session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.7))
-    config = tf.estimator.RunConfig(#train_distribute=strategy,
-                                    save_checkpoints_secs=120,
-                                    session_config=session_config)
+    # strategy = None
+    # According to the guide, https://www.tensorflow.org/guide/distribute_strategy, MirroredStrategy defaults to using NCCL for cross device communication and NCCL is not available on Windows.
+    # strategy = distribution_utils.get_distribution_strategy(num_gpus=2, all_reduce_alg="hierarchical_copy")
+    strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=2,
+                                                      cross_device_ops=tf.contrib.distribute.AllReduceCrossDeviceOps("hierarchical_copy", num_packs=2))
+    # session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.7))
+    config = tf.estimator.RunConfig(train_distribute=strategy,
+                                    save_checkpoints_secs=120)#,
+                                    # session_config=session_config)
 
     if FLAGS.pretrained_model_checkpoint_path is not None:
         warm_start_settings = tf.estimator.WarmStartSettings(
@@ -509,7 +519,11 @@ def main(_):
     # input_fn 用来提供训练时的输入数据；
     # max_steps 指定总共训练多少步；
     # hooks 是一个 tf.train.SessionRunHook 对象，用来配置分布式训练等参数。
+    train_hooks = hooks_helper.get_train_hooks([], 
+                                               model_dir=FLAGS.model_dir,
+                                               batch_size=FLAGS.batch_size)
     train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn,
+                                        hooks=train_hooks,
                                         max_steps=FLAGS.num_steps)
 
     eval_input_fn = create_input_fn([FLAGS.val_record_path],
