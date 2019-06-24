@@ -485,7 +485,7 @@ def main(_):
 
     # strategy = None
     # According to the guide, https://www.tensorflow.org/guide/distribute_strategy, MirroredStrategy defaults to using NCCL for cross device communication and NCCL is not available on Windows.
-    # strategy = distribution_utils.get_distribution_strategy(num_gpus=2, all_reduce_alg="hierarchical_copy")
+    # following code only work at TensorFlow 1.13
     strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=2,
                                                       cross_device_ops=tf.contrib.distribute.AllReduceCrossDeviceOps("hierarchical_copy", num_packs=2))
     # session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.7))
@@ -519,9 +519,11 @@ def main(_):
     # input_fn 用来提供训练时的输入数据；
     # max_steps 指定总共训练多少步；
     # hooks 是一个 tf.train.SessionRunHook 对象，用来配置分布式训练等参数。
-    train_hooks = hooks_helper.get_train_hooks([], 
+    train_hooks = hooks_helper.get_train_hooks(["profilerhook"], 
                                                model_dir=FLAGS.model_dir,
-                                               batch_size=FLAGS.batch_size)
+                                               batch_size=FLAGS.batch_size,
+                                               save_steps=50,
+                                               )
     train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn,
                                         hooks=train_hooks,
                                         max_steps=FLAGS.num_steps)
