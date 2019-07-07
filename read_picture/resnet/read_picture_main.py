@@ -33,15 +33,15 @@ flags = tf.app.flags
 
 flags.DEFINE_string('gpu_indices', '0,1', 'The index of gpus to used.')
 flags.DEFINE_string('train_record_path',
-                    'F:/Code/buysell/read_picture/resnet/datasets/train.record',
+                    './resnet/datasets/train.record',
                     'Path to training tfrecord file.')
 flags.DEFINE_string('val_record_path',
-                    'F:/Code/buysell/read_picture/resnet/datasets/val.record',
+                    './resnet/datasets/val.record',
                     'Path to validation tfrecord file.')
 flags.DEFINE_string('checkpoint_path',
-                    'F:/Code/buysell/read_picture/resnet/datasets/resnet/training',
+                    './resnet/datasets/resnet/training',
                     'Path to a pretrained model.')
-flags.DEFINE_string('model_dir', 'F:/Code/buysell/read_picture/resnet/training', 'Path to log directory.')
+flags.DEFINE_string('model_dir', './resnet/training', 'Path to log directory.')
 flags.DEFINE_float('keep_checkpoint_every_n_hours',
                    0.2,
                    'Save model checkpoint every n hours.')
@@ -486,8 +486,7 @@ def main(_):
     # strategy = None
     # According to the guide, https://www.tensorflow.org/guide/distribute_strategy, MirroredStrategy defaults to using NCCL for cross device communication and NCCL is not available on Windows.
     # following code only work at TensorFlow 1.13
-    strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=2,
-                                                      cross_device_ops=tf.contrib.distribute.AllReduceCrossDeviceOps("hierarchical_copy", num_packs=2))
+    strategy = tf.contrib.distribute.MirroredStrategy()
     # session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.7))
     config = tf.estimator.RunConfig(train_distribute=strategy,
                                     save_checkpoints_secs=120)#,
