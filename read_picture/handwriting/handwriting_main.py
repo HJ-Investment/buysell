@@ -35,28 +35,28 @@ flags = tf.app.flags
 
 flags.DEFINE_string('gpu_indices', '0,1', 'The index of gpus to used.')
 flags.DEFINE_string('train_record_path',
-                    './resnet/datasets/train.record',
+                    '/tf/handwriting/datasets/',
                     'Path to training tfrecord file.')
 flags.DEFINE_string('val_record_path',
-                    './resnet/datasets/val.record',
+                    '/tf/handwriting/datasets/',
                     'Path to validation tfrecord file.')
 flags.DEFINE_string('checkpoint_path',
-                    './resnet/datasets/resnet/training',
+                    '/tf/handwriting/datasets/resnet/training',
                     'Path to a pretrained model.')
-flags.DEFINE_string('model_dir', './resnet/training', 'Path to log directory.')
-flags.DEFINE_float('keep_checkpoint_every_n_hours',
-                   0.2,
-                   'Save model checkpoint every n hours.')
+flags.DEFINE_string('model_dir', '/tf/handwriting/training', 'Path to log directory.')
+# flags.DEFINE_float('keep_checkpoint_every_n_hours',
+#                    0.2,
+#                    'Save model checkpoint every n hours.')
 flags.DEFINE_string('learning_rate_decay_type',
                     'exponential',
                     'Specifies how the learning rate is decayed. One of '
                     '"fixed", "exponential", or "polynomial"')
 flags.DEFINE_integer('pretrained_model_checkpoint_path', None, '')
 flags.DEFINE_float('learning_rate',
-                   0.0001,
+                   0.01,
                    'Initial learning rate.')
 flags.DEFINE_float('end_learning_rate',
-                   0.000001,
+                   0.0001,
                    'The minimal end learning rate used by a polynomial decay '
                    'learning rate.')
 flags.DEFINE_float('decay_steps',
@@ -97,8 +97,7 @@ def transform_data(image):
     return image
 
 
-def create_input_fn(record_paths, batch_size=64,
-                    num_epochs=0, num_parallel_batches=8,
+def create_input_fn(record_paths, batch_size=64, is_train=True,
                     num_prefetch_batches=2):
     """Create a train or eval `input` function for `Estimator`.
 
@@ -110,59 +109,22 @@ def create_input_fn(record_paths, batch_size=64,
     """
 
     def _input_fn():
-        decoder = get_decoder()
-
-        def decode(value):
-            keys = decoder.list_items()
-            tensors = decoder.decode(value)
-            tensor_dict = dict(zip(keys, tensors))
-            image = tensor_dict.get('image')
-            image = transform_data(image)
-            # features_dict = {'image': image}
-            # return features_dict, tensor_dict.get('label')
-            return image, tensor_dict.get('label')
-
-        dataset = read_dataset(
-            functools.partial(tf.data.TFRecordDataset,
-                              buffer_size=8 * 1000 * 1000),
-            input_files=record_paths,
-            num_epochs=num_epochs)
-        if batch_size:
-            num_parallel_calles = batch_size * num_parallel_batches
+        if(is_train):
+            images = 'emnist-letters-train-images-idx3-ubyte'
+            labels = 'emnist-letters-train-labels-idx1-ubyte'
         else:
-            num_parallel_calles = num_parallel_batches
-        dataset = dataset.map(decode, num_parallel_calls=num_parallel_calles)
-        if batch_size:
-            dataset = dataset.apply(
-                tf.contrib.data.batch_and_drop_remainder(batch_size))
-        dataset = dataset.prefetch(num_prefetch_batches)
+            images = 'emnist-letters-test-images-idx3-ubyte'
+            labels = 'emnist-letters-test-labels-idx1-ubyte'
+
+        dataset = input_data.load_emnist_image(record_paths, images, labels)
+
+        # if batch_size:
+        #     dataset = dataset.apply(
+        #         tf.contrib.data.batch_and_drop_remainder(batch_size))
+        # dataset = dataset.prefetch(num_prefetch_batches)
         return dataset
 
     return _input_fn
-
-
-def create_predict_input_fn():
-
-    def _predict_input_fn():
-        """Decodes serialized tf.Examples and returns `ServingInputReceiver`.
-
-        Returns:
-            `ServingInputReceiver`.
-        """
-        example = tf.placeholder(dtype=tf.string, shape=[], name='tf_example')
-
-        decoder = get_decoder()
-        keys = decoder.list_items()
-        tensors = decoder.decode(example, items=keys)
-        tensor_dict = dict(zip(keys, tensors))
-        image = tensor_dict.get('image')
-        image = transform_data(image)
-        images = tf.expand_dims(image, axis=0)
-        return tf.estimator.export.ServingInputReceiver(
-            features={'image': images},
-            receiver_tensors={'serialized_example': example})
-
-    return _predict_input_fn
 
 
 def _get_block_sizes(resnet_size):
@@ -197,7 +159,7 @@ def resnet_model_fn(features, labels, mode, params):
         bottleneck = True
     model = resnet_model.Model(resnet_size=resnet_size,
                                bottleneck=bottleneck,
-                               num_classes=2,
+                               num_classes=FLAGS.num_classes,
                                num_filters=64,
                                kernel_size=7,
                                conv_stride=2,
@@ -415,7 +377,7 @@ def main(_):
                                        warm_start_from=warm_start_settings,
                                        params={'resnet_size': 50})
 
-    train_input_fn = create_input_fn([FLAGS.train_record_path],
+    train_input_fn = create_input_fn(FLAGS.train_record_path, is_train=True,
                                      batch_size=FLAGS.batch_size)
 
     # 使用 tf.estimator.TrainSpec 指定训练输入函数及相关参数。该类的完整形式是：
@@ -432,14 +394,8 @@ def main(_):
                                         # hooks=train_hooks,
                                         max_steps=FLAGS.num_steps)
 
-    eval_input_fn = create_input_fn([FLAGS.val_record_path],
-                                    batch_size=FLAGS.batch_size,
-                                    num_epochs=1)
-
-    predict_input_fn = create_predict_input_fn()
-
-    eval_exporter = tf.estimator.FinalExporter(
-        name='servo', serving_input_receiver_fn=predict_input_fn)
+    eval_input_fn = create_input_fn(FLAGS.val_record_path, is_train=False,
+                                    batch_size=FLAGS.batch_size)
 
     # 使用 tf.estimator.EvalSpec 指定验证输入函数及相关参数。该类的完整形式是：
     # tf.estimator.EvalSpec(
@@ -456,8 +412,7 @@ def main(_):
     # exporters 是一个 Exporter 迭代器，会参与到每次的模型验证；
     # start_delay_secs 指定多少秒之后开始模型验证；
     # throttle_secs 指定多少秒之后重新开始新一轮模型验证（当然，如果没有新的模型断点保存，则该数值秒之后不会进行模型验证，因此这是新一轮模型验证需要等待的最小秒数）
-    eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, steps=None,
-                                      exporters=eval_exporter)
+    eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, steps=None)
 
     # estimator 是一个 tf.estimator.Estimator 对象，用于指定模型函数以及其它相关参数；
     # train_spec 是一个 tf.estimator.TrainSpec 对象，用于指定训练的输入函数以及其它参数；
