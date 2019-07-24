@@ -25,7 +25,7 @@ import tensorflow as tf
 import exporter
 import resnet_model
 
-from official.utils.logs import hooks_helper
+# from official.utils.logs import hooks_helper
 from official.utils.misc import distribution_utils
 
 import input_data
@@ -90,12 +90,6 @@ flags.DEFINE_boolean('enable_lars', False, '')
 FLAGS = flags.FLAGS
 
 
-def transform_data(image):
-    size = FLAGS.input_size
-    image = tf.squeeze(tf.image.resize_bilinear([image], size=[size, size]))
-    image = tf.to_float(image)
-    return image
-
 
 def create_input_fn(record_paths, batch_size=64, is_train=True,
                     num_prefetch_batches=2):
@@ -112,11 +106,13 @@ def create_input_fn(record_paths, batch_size=64, is_train=True,
         if(is_train):
             images = 'emnist-letters-train-images-idx3-ubyte'
             labels = 'emnist-letters-train-labels-idx1-ubyte'
+            dataset = input_data.load_emnist_image(record_paths, images, labels)
         else:
             images = 'emnist-letters-test-images-idx3-ubyte'
             labels = 'emnist-letters-test-labels-idx1-ubyte'
+            dataset = input_data.load_emnist_image(record_paths, images, labels, type='val')
 
-        dataset = input_data.load_emnist_image(record_paths, images, labels)
+        
 
         # if batch_size:
         #     dataset = dataset.apply(
@@ -303,7 +299,8 @@ def resnet_model_fn(features, labels, mode, params):
     accuracy_top_5 = tf.compat.v1.metrics.mean(
         tf.nn.in_top_k(predictions=logits, targets=labels, k=5, name='top_5_op'))
     metrics = {'accuracy': accuracy,
-               'accuracy_top_5': accuracy_top_5}
+               'accuracy_top_5': accuracy_top_5
+              }
 
     # Create a tensor named train_accuracy for logging purposes
     tf.identity(accuracy[1], name='train_accuracy')
@@ -356,7 +353,7 @@ def main(_):
     strategy = tf.contrib.distribute.MirroredStrategy()
     # session_config = tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.7))
     config = tf.estimator.RunConfig(train_distribute=strategy,
-                                    save_checkpoints_secs=120)#,
+                                    save_checkpoints_secs=300)#,
                                     # session_config=session_config)
 
     if FLAGS.pretrained_model_checkpoint_path is not None:

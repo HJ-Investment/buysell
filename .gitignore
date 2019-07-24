@@ -238,3 +238,4 @@ kaggle/Digit Recognizer/model/*
 read_picture/resnet/datasets/*
 read_picture/resnet/training/*
 read_picture/handwriting/datasets/*
+read_picture/handwriting/training/*

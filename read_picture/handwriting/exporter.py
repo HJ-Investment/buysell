@@ -260,9 +260,14 @@ def write_graph_and_checkpoint(inference_graph_def,
 def _get_outputs_from_inputs(input_tensors, model, 
                              output_collection_name):
     inputs = tf.to_float(input_tensors)
-    preprocessed_inputs = model.preprocess(inputs)
-    output_tensors = model.predict(preprocessed_inputs)
-    postprocessed_tensors = model.postprocess(output_tensors)
+    postprocessed_tensors = {}
+    logits = model(inputs, False)
+    logits = tf.cast(logits, tf.float32)
+    logits = tf.nn.softmax(logits)
+    classes = tf.argmax(logits, axis=1)
+    postprocessed_tensors['logits'] = logits
+    postprocessed_tensors['classes'] = classes
+
     return _add_output_tensor_nodes(postprocessed_tensors,
                                     output_collection_name)
     
